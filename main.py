@@ -1,15 +1,15 @@
-import asyncio
 import argparse
+import asyncio
+import importlib.util
 
-from prompt_optimizer.trainer import PromptOptimizer
-from langchain_anthropic import ChatAnthropic
 import langsmith as ls
-from prompt_optimizer.tasks.scone import scone_task
-from prompt_optimizer.tasks.tweet_generator import tweet_task
+from langchain_anthropic import ChatAnthropic
 from prompt_optimizer.tasks.metaprompt import metaprompt_task
+from prompt_optimizer.tasks.scone import scone_task
 from prompt_optimizer.tasks.simpleqa import simpleqa_task
 from prompt_optimizer.tasks.ticket_classification import ticket_classification_task
-
+from prompt_optimizer.tasks.tweet_generator import tweet_task
+from prompt_optimizer.trainer import PromptOptimizer, Task
 
 tasks = {
     "scone": scone_task,
@@ -25,6 +25,25 @@ optimizer = PromptOptimizer(
 )
 
 
+def load_task(name_or_path: str) -> Task:
+    task = tasks.get(name_or_path)
+    if task:
+        return task
+    # If task is not in predefined tasks, try to load from file
+    try:
+        module_path, task_variable = [part for part in name_or_path.split(":") if part]
+
+        spec = importlib.util.spec_from_file_location("task_module", module_path)
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        task = getattr(module, task_variable)
+        if not isinstance(task, Task):
+            raise ValueError
+        return task
+    except Exception as e:
+        raise ValueError(f"Could not load task from {name_or_path}: {e}")
+
+
 async def run(
     task_name: str,
     batch_size: int,
@@ -34,9 +53,7 @@ async def run(
     debug: bool = False,
     commit: bool = True,
 ):
-    task = tasks.get(task_name)
-    if not task:
-        raise ValueError(f"Unknown task: {task_name}")
+    task = load_task(task_name)
 
     with ls.tracing_context(project_name="Optim"):
         prompt, score = await optimizer.optimize_prompt(
@@ -60,7 +77,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Optimize prompts for different tasks."
     )
-    parser.add_argument("task", choices=list(tasks), help="Task to optimize")
+    parser.add_argument(
+        "--task",
+        help=f"Task to optimize. You can pick one off the shelf or select select a path. Off-the-shelf options include: {', '.join(tasks)}.",
+    )
     parser.add_argument(
         "--batch-size", type=int, default=40, help="Batch size for optimization"
     )

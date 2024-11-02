@@ -679,7 +679,9 @@ class PromptOptimizer:
             ),
         )
         prompt_output: OptimizedPromptOutput = await chain.ainvoke(inputs)
-        candidate = PromptConfig.from_prior(current_prompt, prompt_output.improved_prompt)
+        candidate = PromptConfig.from_prior(
+            current_prompt, prompt_output.improved_prompt
+        )
 
         _print_rich_diff(
             current_prompt.get_prompt_str_in_context(self.client),

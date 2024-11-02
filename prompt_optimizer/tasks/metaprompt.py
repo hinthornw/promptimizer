@@ -1,5 +1,3 @@
-import copy
-from dataclasses import asdict
 import langsmith as ls
 from langchain_anthropic import ChatAnthropic
 from prompt_optimizer.trainer import (
@@ -100,7 +98,7 @@ class MetapromptSystem:
         # Generate new downstream task prompt
         extracted = await self.trainer.apply_metaprompt(
             current_prompt=task.initial_prompt,
-            meta_prompt=prompt.messages[0].prompt.template, # type: ignore
+            meta_prompt=prompt.messages[0].prompt.template,  # type: ignore
             task=task,
             results=initial_results,
         )

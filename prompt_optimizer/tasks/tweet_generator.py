@@ -40,9 +40,7 @@ def multiple_lines(run, example):
 tweet_task = Task(
     name="Tweet Generator",
     dataset="tweet-optim",
-    initial_prompt=PromptConfig(
-        identifier="tweet-generator-example:c39837bd"
-    ),  # starting point
+    initial_prompt=PromptConfig(identifier="tweet-generator-example:c39837bd"),
     evaluators=[under_180_chars, no_hashtags, multiple_lines],
     evaluator_descriptions={
         "under_180_chars": "Checks if the tweet is under 180 characters. 1 if true, 0 if false.",
@@ -50,6 +48,9 @@ tweet_task = Task(
         "multiline": "Fails if the tweet is not multiple lines. 1 if true, 0 if false. 0 is bad.",
     },
 )
+
+
+## Example of how to create the dataset
 
 if __name__ == "__main__":
     from langsmith import Client

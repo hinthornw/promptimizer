@@ -1,15 +1,15 @@
 import langsmith as ls
 from langchain_anthropic import ChatAnthropic
-from prompt_optimizer.trainer import (
+from promptim.trainer import (
     PromptConfig,
     PromptOptimizer,
     Task,
     DEFAULT_METAPROMPT,
 )
-from prompt_optimizer.tasks.scone import scone_task
-from prompt_optimizer.tasks.tweet_generator import tweet_task
-from prompt_optimizer.tasks.simpleqa import simpleqa_task
-from prompt_optimizer.tasks.ticket_classification import ticket_classification_task
+from promptim.tasks.scone import scone_task
+from promptim.tasks.tweet_generator import tweet_task
+from promptim.tasks.simpleqa import simpleqa_task
+from promptim.tasks.ticket_classification import ticket_classification_task
 from langchain_core.prompts import ChatPromptTemplate
 
 

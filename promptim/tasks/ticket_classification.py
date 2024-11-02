@@ -2,7 +2,7 @@ import functools
 import logging
 
 from langchain_openai import ChatOpenAI
-from prompt_optimizer.trainer import PromptConfig, Task
+from promptim.trainer import PromptConfig, Task
 from pydantic import BaseModel, Field
 from trustcall import create_extractor
 

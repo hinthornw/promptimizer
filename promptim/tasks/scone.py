@@ -1,4 +1,4 @@
-from prompt_optimizer.trainer import PromptConfig, Task
+from promptim.trainer import PromptConfig, Task
 
 
 def exact_match(run, example):

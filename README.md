@@ -14,22 +14,25 @@ python main.py tweet
 Script:
 
 ```shell
-usage: main.py [-h] [--batch-size BATCH_SIZE] [--train-size TRAIN_SIZE] [--epochs EPOCHS]
-               {scone,tweet,metaprompt,simpleqa}
+Usage:  [OPTIONS]
 
-Optimize prompts for different tasks.
+  Optimize prompts for different tasks.
 
-positional arguments:
-  {scone,tweet,metaprompt,simpleqa}
-                        Task to optimize
-
-options:
-  -h, --help            show this help message and exit
-  --batch-size BATCH_SIZE
-                        Batch size for optimization
-  --train-size TRAIN_SIZE
-                        Training size for optimization
-  --epochs EPOCHS       Number of epochs for optimization
+Options:
+  --version [1]                [required]
+  --task TEXT                  Task to optimize. You can pick one off the
+                               shelf or  path. Off-the-shelf options
+                               include: scone, tweet, metaprompt, simpleqa,
+                               ticket-classification.
+  --batch-size INTEGER         Batch size for optimization
+  --train-size INTEGER         Training size for optimization
+  --epochs INTEGER             Number of epochs for optimization
+  --debug                      Enable debug mode
+  --use-annotation-queue TEXT  The name of the annotation queue to use. Note:
+                               we will delete the queue whenever you resume
+                               training (on every batch).
+  --no-commit                  Do not commit the optimized prompt to the hub
+  --help                       Show this message and exit.
 ```
 
 Currently has ~ 4 tasks:

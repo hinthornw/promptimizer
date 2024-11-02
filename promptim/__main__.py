@@ -1,15 +1,15 @@
-import argparse
 import asyncio
 import importlib.util
 
+import click
 import langsmith as ls
 from langchain_anthropic import ChatAnthropic
-from prompt_optimizer.tasks.metaprompt import metaprompt_task
-from prompt_optimizer.tasks.scone import scone_task
-from prompt_optimizer.tasks.simpleqa import simpleqa_task
-from prompt_optimizer.tasks.ticket_classification import ticket_classification_task
-from prompt_optimizer.tasks.tweet_generator import tweet_task
-from prompt_optimizer.trainer import PromptOptimizer, Task
+from promptim.tasks.metaprompt import metaprompt_task
+from promptim.tasks.scone import scone_task
+from promptim.tasks.simpleqa import simpleqa_task
+from promptim.tasks.ticket_classification import ticket_classification_task
+from promptim.tasks.tweet_generator import tweet_task
+from promptim.trainer import PromptOptimizer, Task
 
 tasks = {
     "scone": scone_task,
@@ -73,47 +73,54 @@ async def run(
     return prompt, score
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Optimize prompts for different tasks."
-    )
-    parser.add_argument(
-        "--task",
-        help=f"Task to optimize. You can pick one off the shelf or select select a path. Off-the-shelf options include: {', '.join(tasks)}.",
-    )
-    parser.add_argument(
-        "--batch-size", type=int, default=40, help="Batch size for optimization"
-    )
-    parser.add_argument(
-        "--train-size", type=int, default=40, help="Training size for optimization"
-    )
-    parser.add_argument(
-        "--epochs", type=int, default=2, help="Number of epochs for optimization"
-    )
-    parser.add_argument("--debug", action="store_true", help="Enable debug mode")
-    parser.add_argument(
-        "--use-annotation-queue",
-        type=str,
-        default=None,
-        help="The name of the annotation queue to use. Note: we will delete the queue whenever you resume training (on every batch).",
-    )
-    parser.add_argument(
-        "--no-commit",
-        action="store_true",
-        help="Do not commit the optimized prompt to the hub",
-    )
-
-    args = parser.parse_args()
-
+@click.command(help="Optimize prompts for different tasks.")
+@click.option("--version", type=click.Choice(["1"]), required=True)
+@click.option(
+    "--task",
+    help="Task to optimize. You can pick one off the shelf or select a path "
+    "(e.g., '/path/to/task.py:TaskClass'). Off-the-shelf options"
+    f" include: {', '.join([t for t in tasks if t not in ('ticket-classification', 'metaprompt')])}.",
+)
+@click.option("--batch-size", type=int, default=40, help="Batch size for optimization")
+@click.option(
+    "--train-size", type=int, default=40, help="Training size for optimization"
+)
+@click.option("--epochs", type=int, default=2, help="Number of epochs for optimization")
+@click.option("--debug", is_flag=True, help="Enable debug mode")
+@click.option(
+    "--use-annotation-queue",
+    type=str,
+    default=None,
+    help="The name of the annotation queue to use. Note: we will delete the queue whenever you resume training (on every batch).",
+)
+@click.option(
+    "--no-commit",
+    is_flag=True,
+    help="Do not commit the optimized prompt to the hub",
+)
+def main(
+    version,
+    task,
+    batch_size,
+    train_size,
+    epochs,
+    debug,
+    use_annotation_queue,
+    no_commit,
+):
     results = asyncio.run(
         run(
-            args.task,
-            args.batch_size,
-            args.train_size,
-            args.epochs,
-            args.use_annotation_queue,
-            args.debug,
-            commit=not args.no_commit,
+            task,
+            batch_size,
+            train_size,
+            epochs,
+            use_annotation_queue,
+            debug,
+            commit=not no_commit,
         )
     )
     print(results)
+
+
+if __name__ == "__main__":
+    main()

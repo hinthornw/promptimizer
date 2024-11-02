@@ -1,4 +1,4 @@
-from prompt_optimizer.trainer import PromptConfig, Task
+from promptim.trainer import PromptConfig, Task
 
 
 def under_180_chars(run, example):

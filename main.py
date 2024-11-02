@@ -32,13 +32,14 @@ async def run(
     epochs: int,
     use_annotation_queue: str | None = None,
     debug: bool = False,
+    commit: bool = True,
 ):
     task = tasks.get(task_name)
     if not task:
         raise ValueError(f"Unknown task: {task_name}")
 
     with ls.tracing_context(project_name="Optim"):
-        return await optimizer.optimize_prompt(
+        prompt, score = await optimizer.optimize_prompt(
             task,
             batch_size=batch_size,
             train_size=train_size,
@@ -46,6 +47,13 @@ async def run(
             use_annotation_queue=use_annotation_queue,
             debug=debug,
         )
+    if commit and task.initial_prompt.identifier is not None:
+        optimizer.client.push_prompt(
+            task.initial_prompt.identifier.rsplit(":", maxsplit=1)[0],
+            object=prompt.load(optimizer.client),
+        )
+
+    return prompt, score
 
 
 if __name__ == "__main__":
@@ -69,6 +77,11 @@ if __name__ == "__main__":
         default=None,
         help="The name of the annotation queue to use. Note: we will delete the queue whenever you resume training (on every batch).",
     )
+    parser.add_argument(
+        "--no-commit",
+        action="store_true",
+        help="Do not commit the optimized prompt to the hub",
+    )
 
     args = parser.parse_args()
 
@@ -80,6 +93,7 @@ if __name__ == "__main__":
             args.epochs,
             args.use_annotation_queue,
             args.debug,
+            commit=not args.no_commit,
         )
     )
     print(results)

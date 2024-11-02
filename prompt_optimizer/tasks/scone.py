@@ -1,8 +1,4 @@
-from typing import Literal
-
-from pydantic import BaseModel, Field
-from prompt_optimizer.trainer import Task
-from langchain_openai import ChatOpenAI
+from prompt_optimizer.trainer import PromptConfig, Task
 
 
 def exact_match(run, example):
@@ -24,40 +20,12 @@ def exact_match(run, example):
     }
 
 
-predictor_llm = ChatOpenAI(model="gpt-4o-mini")
-
-
-class SubmitOutput(BaseModel):
-    reasoning: str = Field(
-        description="First, think step-by-step to determine the correct answer before submitting your response."
-    )
-    is_entailed: Literal["Yes", "No"]
-
-
-async def scone_system(prompt: str, inputs: dict):
-    extracted = await predictor_llm.with_structured_output(SubmitOutput).ainvoke(
-        [
-            ("system", prompt),
-            (
-                "user",
-                "Context: {context}\n\nStatement: {question}\n\nIs this statement entailed? Answer 'Yes' or 'No'".format(
-                    **inputs
-                ),
-            ),
-        ]
-    )
-    return extracted.model_dump(mode="json")
-
-
 scone_task = Task(
     name="Scone (NLI)",
-    train_dataset_name="scone-train2",
-    dev_dataset_name="scone-dev2",
-    test_dataset_name="scone-test-one-scoped",
-    initial_prompt="""Determine if the statement is entailed by the context. Answer 'Yes' if entailed, 'No' otherwise.""",
+    dataset="scone-optim",
+    initial_prompt=PromptConfig(identifier="langchain-ai/scone-example:d49910d6"),
     evaluators=[exact_match],
     evaluator_descriptions={
         "exact_match": "Directly compares the expected against the predicted outputs. 1 if correct, 0 if incorrect."
     },
-    system=scone_system,
 )

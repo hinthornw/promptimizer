@@ -1,6 +1,3 @@
-from promptim.trainer import PromptConfig, Task
-
-
 def multiple_lines(run, example):
     """Evaluate if the tweet contains multiple lines."""
     result = run.outputs.get("tweet", "")
@@ -13,10 +10,14 @@ def multiple_lines(run, example):
     }
 
 
-tweet_task = Task(
+tweet_task = dict(
     name="Tweet Generator",
     dataset="tweet-optim",
-    initial_prompt=PromptConfig(identifier="tweet-generator-example:c39837bd"),
+    initial_prompt={
+        "identifier": "tweet-generator-example:c39837bd",
+    },
+    # See the starting prompt here:
+    # https://smith.langchain.com/hub/langchain-ai/tweet-generator-example/c39837bd
     evaluators=[multiple_lines],
     evaluator_descriptions={
         "under_180_chars": "Checks if the tweet is under 180 characters. 1 if true, 0 if false.",
@@ -24,5 +25,3 @@ tweet_task = Task(
         "multiline": "Fails if the tweet is not multiple lines. 1 if true, 0 if false. 0 is bad.",
     },
 )
-
-

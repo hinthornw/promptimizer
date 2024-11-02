@@ -41,7 +41,7 @@ def load_task(name_or_path: str):
         spec.loader.exec_module(module)
         task = getattr(module, task_variable)
         if not isinstance(task, Task):
-            raise ValueError
+            task = Task.from_dict(task)
         return task, config
     except Exception as e:
         raise ValueError(f"Could not load task from {name_or_path}: {e}")

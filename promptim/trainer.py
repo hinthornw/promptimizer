@@ -218,6 +218,11 @@ class Task:
     system: Optional[SystemType] = None
     baseline_experiment: UUID | None = None
 
+    @classmethod
+    def from_dict(cls, d: dict):
+        d_ = d.copy()
+        return cls(**{"initial_prompt": PromptConfig(**d_.pop("initial_prompt")), **d_})
+
     def describe(self):
         descript = self.description if self.description else self.name
         evaluator_desc = "\n".join(

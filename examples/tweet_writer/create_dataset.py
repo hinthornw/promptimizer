@@ -1,74 +1,4 @@
-from pydantic import BaseModel, Field
-from prompt_optimizer.trainer import Task
-from langchain_openai import ChatOpenAI
-
-predictor_llm = ChatOpenAI(model="gpt-4")
-
-
-class TweetOutput(BaseModel):
-    tweet: str = Field(description="The generated tweet")
-
-
-async def tweet_system(prompt: str, inputs: dict):
-    extracted = await predictor_llm.with_structured_output(TweetOutput).ainvoke(
-        [
-            ("system", prompt),
-            ("user", f"Write a tweet about: {inputs['topic']}"),
-        ]
-    )
-    return extracted.model_dump(mode="json")
-
-
-def under_180_chars(run, example):
-    """Evaluate if the tweet is under 180 characters."""
-    result = run.outputs.get("tweet", "")
-    score = int(len(result) < 180)
-    comment = "Pass" if score == 1 else "Fail"
-    return {
-        "key": "under_180_chars",
-        "score": score,
-        "comment": comment,
-    }
-
-
-def no_hashtags(run, example):
-    """Evaluate if the tweet contains no hashtags."""
-    result = run.outputs.get("tweet", "")
-    score = int("#" not in result)
-    comment = "Pass" if score == 1 else "Fail"
-    return {
-        "key": "no_hashtags",
-        "score": score,
-        "comment": comment,
-    }
-
-
-def multiple_lines(run, example):
-    """Evaluate if the tweet contains multiple lines."""
-    result = run.outputs.get("tweet", "")
-    score = int("\n" in result)
-    comment = "Pass" if score == 1 else "Fail"
-    return {
-        "key": "multiline",
-        "score": score,
-        "comment": comment,
-    }
-
-
-tweet_task = Task(
-    name="Tweet Generator",
-    train_dataset_name="tweet-train",
-    dev_dataset_name="tweet-dev",
-    test_dataset_name="tweet-test",
-    initial_prompt="""Generate a tweet about the given topic.""",
-    evaluators=[under_180_chars, no_hashtags, multiple_lines],
-    evaluator_descriptions={
-        "under_180_chars": "Checks if the tweet is under 180 characters. 1 if true, 0 if false.",
-        "no_hashtags": "Checks if the tweet contains no hashtags. 1 if true, 0 if false.",
-        "multiline": "Fails if the tweet is not multiple lines. 1 if true, 0 if false. 0 is bad.",
-    },
-    system=tweet_system,
-)
+## Example of how to create the dataset
 
 if __name__ == "__main__":
     from langsmith import Client
@@ -204,11 +134,7 @@ if __name__ == "__main__":
     ]
 
     # Create datasets
-    datasets = {
-        "train": client.create_dataset(dataset_name="tweet-train"),
-        "dev": client.create_dataset(dataset_name="tweet-dev"),
-        "test": client.create_dataset(dataset_name="tweet-test"),
-    }
+    ds = client.create_dataset(dataset_name="tweet-optim")
 
     # Split topics into train, dev, and test sets
     train_topics = topics[:80]
@@ -216,14 +142,15 @@ if __name__ == "__main__":
     test_topics = topics[90:]
 
     # Create examples for each dataset
-    for dataset_name, dataset_topics in [
+    for split_name, dataset_topics in [
         ("train", train_topics),
         ("dev", dev_topics),
         ("test", test_topics),
     ]:
         client.create_examples(
             inputs=[{"topic": topic} for topic in dataset_topics],
-            dataset_id=datasets[dataset_name].id,
+            dataset_id=ds.id,
+            splits=[split_name] * len(dataset_topics),
         )
 
-    print("Datasets created successfully!")
+    print("Dataset created successfully!")

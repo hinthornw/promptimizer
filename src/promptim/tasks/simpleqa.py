@@ -1,8 +1,7 @@
 from typing import Literal
 
 from pydantic import BaseModel, Field
-from prompt_optimizer.trainer import Task
-from langchain_anthropic import ChatAnthropic
+from promptim.trainer import PromptConfig, Task
 from langchain_openai import ChatOpenAI
 
 GRADER_TEMPLATE = """Your job is to look at a question, a gold target, and a predicted answer, and then assign a grade of either ["CORRECT", "INCORRECT", "NOT_ATTEMPTED"].
@@ -108,31 +107,15 @@ async def simpleqa_evaluator(run, example):
     return {"key": "simpleqa_score", "score": score, "comment": comment}
 
 
-predictor_llm = ChatAnthropic(model="claude-3-sonnet-20240229")
-
-
-async def simpleqa_system(prompt: str, inputs: dict):
-    message = await predictor_llm.ainvoke(
-        [
-            ("system", prompt),
-            ("human", f"Question: {inputs['problem']}"),
-        ]
-    )
-    return message.content
-
-
 simpleqa_task = Task(
     name="SimpleQA",
     description="A task to measure short-form factuality in large language models",
-    train_dataset_name="simpleqa-train",
-    dev_dataset_name="simpleqa-dev",
-    test_dataset_name="simpleqa-test",
-    initial_prompt="""Answer the question. If you don't know, say you don't know.""",
+    dataset="simpleqa-optim",
+    initial_prompt=PromptConfig(identifier="langchain-ai/simpleqa-example:43349b82"),
     evaluators=[simpleqa_evaluator],
     evaluator_descriptions={
         "simpleqa_score": "Evaluates the correctness of the answer. 1 if correct, 0 if incorrect or not attempted."
     },
-    system=simpleqa_system,
 )
 
 if __name__ == "__main__":
@@ -146,15 +129,17 @@ if __name__ == "__main__":
     random.shuffle(examples)
     full = examples.copy()
     train, dev, test = [], [], []
+    dataset = c.create_dataset(dataset_name="simpleqa-optim")
     for ds, size, name in zip(
         [train, dev, test], [200, 100, 100], ["train", "dev", "test"]
     ):
         for i in range(size):
             ds.append(full.pop())
-        dataset = c.create_dataset(dataset_name=f"simpleqa-{name}")
+
         c.create_examples(
             inputs=[{"problem": e.inputs["problem"]} for e in ds],
             outputs=[e.outputs for e in ds],
             dataset_id=dataset.id,
             metadata=[e.inputs["metadata"] for e in ds],
+            splits=[name] * len(ds),
         )

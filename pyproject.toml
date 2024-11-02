@@ -1,16 +1,27 @@
 [project]
-name = "prompt-optimizer"
-version = "0.1.0"
+name = "promptim"
+version = "0.0.2"
 description = "A framework for optimizing prompts through multi-task evaluation and iterative improvement"
+authors = [
+    { name = "William Fu-Hinthorn", email = "13333726+hinthornw@users.noreply.github.com" }
+]
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "click",
+    "langchain",
     "langchain-anthropic>=0.2.3",
     "langchain-openai",
     "pandas>=0.2.4",
     "rich",
-    "trustcall",
 ]
 
+[project.scripts]
+promptim = "promptim.__main__:cli"
+
 [tool.setuptools]
-packages = ["prompt_optimizer"]
+packages = ["promptim"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

@@ -1,14 +1,16 @@
 import langsmith as ls
 from langchain_anthropic import ChatAnthropic
-from prompt_optimizer.trainer import (
+from promptim.trainer import (
+    PromptConfig,
     PromptOptimizer,
     Task,
     DEFAULT_METAPROMPT,
 )
-from prompt_optimizer.tasks.scone import scone_task
-from prompt_optimizer.tasks.tweet_generator import tweet_task
-from prompt_optimizer.tasks.simpleqa import simpleqa_task
-from prompt_optimizer.tasks.ticket_classification import ticket_classification_task
+from promptim.tasks.scone import scone_task
+from promptim.tasks.tweet_generator import tweet_task
+from promptim.tasks.simpleqa import simpleqa_task
+from promptim.tasks.ticket_classification import ticket_classification_task
+from langchain_core.prompts import ChatPromptTemplate
 
 
 DEFAULT_METAMETAPROMPT = """You are an expert in prompt optimization systems. Your task is to improve the effectiveness of prompt optimization prompts - the prompts used to guide the improvement of task-specific prompts.
@@ -60,19 +62,20 @@ The enhanced prompt for optimizing task-specific prompts
 class MetapromptSystem:
     """System for running the metaprompt optimization task."""
 
-    def __init__(self, task_map: dict[str, Task], meta_prompt: str | None = None):
+    def __init__(self, task_map: dict[str, Task], meta_prompt: PromptConfig):
         self.task_map = task_map
         self.model = ChatAnthropic(
             model="claude-3-5-sonnet-20241022", max_tokens_to_sample=8192
         )
-        self.trainer = PromptOptimizer(self.model, meta_prompt)
+        self.trainer = PromptOptimizer(self.model, meta_prompt.get_prompt_str())
 
-    async def __call__(self, prompt: str, inputs: dict) -> dict:
+    async def __call__(self, prompt: ChatPromptTemplate, inputs: dict) -> dict:
         task = self.task_map[inputs["task"]]
+        task.initial_prompt.load()
 
         # Run initial prompt on batch using aevaluate
         async def predict(example_inputs: dict):
-            return await task.system(task.initial_prompt, example_inputs)
+            return await task.system_safe(task.initial_prompt.load(), example_inputs)
 
         train_batch = list(
             self.trainer.client.list_examples(example_ids=inputs["train_batch"])
@@ -90,11 +93,12 @@ class MetapromptSystem:
                 )
             )
         ]
+        task.initial_prompt.get_prompt_str()
 
         # Generate new downstream task prompt
         extracted = await self.trainer.apply_metaprompt(
-            current_prompt=prompt,
-            meta_prompt=self.trainer.meta_prompt,
+            current_prompt=task.initial_prompt,
+            meta_prompt=prompt.messages[0].prompt.template,  # type: ignore
             task=task,
             results=initial_results,
         )
@@ -114,7 +118,7 @@ class MetapromptSystem:
         initial_dev_scores = await self.trainer.calculate_scores(initial_dev_results)
 
         async def predict_new(example_inputs: dict):
-            return await task.system(extracted.improved_prompt, example_inputs)
+            return await task.system_safe(extracted._cached, example_inputs)
 
         new_results = [
             r
@@ -129,8 +133,8 @@ class MetapromptSystem:
         new_scores = await self.trainer.calculate_scores(new_results)
         return {
             "original_prompt": task.initial_prompt,
-            "new_prompt": extracted.improved_prompt,
-            "reasoning_for_changes": extracted.analysis,
+            "new_prompt": extracted.get_prompt_str(),
+            # "reasoning_for_changes": extracted.analysis,
             "initial_scores": initial_dev_scores,
             "new_scores": new_scores,
         }
@@ -159,13 +163,12 @@ def metaprompt_evaluator(run, example):
     }
 
 
+prompt_config = PromptConfig(prompt_str=DEFAULT_METAPROMPT)
 metaprompt_task = Task(
     name="Metaprompt Optimizer",
     description="A meta-optimization task that aims to improve the prompt used for optimizing task-specific prompts. This task evaluates and enhances the effectiveness of the prompt optimization process itself, leading to better performance across various language tasks.",
-    train_dataset_name="metaprompt-train",
-    dev_dataset_name="metaprompt-dev",
-    test_dataset_name="metaprompt-test",
-    initial_prompt=DEFAULT_METAPROMPT,
+    dataset="metaprompt-optim",
+    initial_prompt=prompt_config,
     evaluators=[metaprompt_evaluator],
     evaluator_descriptions={
         "metaprompt_improvement": "Checks if the new prompt leads to improved scores. 1 if better, 0.5 if same, 0 if worse."
@@ -177,7 +180,7 @@ metaprompt_task = Task(
             "simpleqa": simpleqa_task,
             "ticket_classification_task": ticket_classification_task,
         },
-        meta_prompt=DEFAULT_METAMETAPROMPT,
+        meta_prompt=prompt_config,
     ),
 )
 
@@ -192,7 +195,7 @@ if __name__ == "__main__":
     def create_datasets(client, tasks, batchsize, overwrite=False):
         datasets = {}
         for split_name in ["train", "dev", "test"]:
-            dataset_name = f"metaprompt-{split_name}"
+            dataset_name = "metaprompt-optim"
             if overwrite:
                 if client.has_dataset(dataset_name=dataset_name):
                     client.delete_dataset(dataset_name=dataset_name)
@@ -226,6 +229,7 @@ if __name__ == "__main__":
                 client.create_examples(
                     inputs=examples,
                     dataset_id=datasets[split_name].id,
+                    splits=[split_name] * len(examples),
                 )
 
         return datasets

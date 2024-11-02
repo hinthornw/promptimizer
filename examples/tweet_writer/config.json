@@ -1,0 +1,9 @@
+{
+  "task": "./task.py:tweet_task",
+  "optimizer": {
+    "model": {
+      "model": "claude-3-5-sonnet-20241022",
+      "max_tokens_to_sample": 8192
+    }
+  }
+}

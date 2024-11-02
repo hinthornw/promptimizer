@@ -1,32 +1,32 @@
 import asyncio
 import importlib.util
+import json
 
 import click
 import langsmith as ls
-from langchain_anthropic import ChatAnthropic
-from promptim.tasks.metaprompt import metaprompt_task
-from promptim.tasks.scone import scone_task
-from promptim.tasks.simpleqa import simpleqa_task
-from promptim.tasks.ticket_classification import ticket_classification_task
-from promptim.tasks.tweet_generator import tweet_task
-from promptim.trainer import PromptOptimizer, Task
-
-tasks = {
-    "scone": scone_task,
-    "tweet": tweet_task,
-    "metaprompt": metaprompt_task,
-    "simpleqa": simpleqa_task,
-    "ticket-classification": ticket_classification_task,
-}
 
 
-optimizer = PromptOptimizer(
-    model=ChatAnthropic(model="claude-3-5-sonnet-20241022", max_tokens_to_sample=8192),
-)
+def get_tasks(task_name: str):
+    from promptim.tasks.metaprompt import metaprompt_task
+    from promptim.tasks.scone import scone_task
+    from promptim.tasks.simpleqa import simpleqa_task
+    from promptim.tasks.ticket_classification import ticket_classification_task
+    from promptim.tasks.tweet_generator import tweet_task
+
+    tasks = {
+        "scone": scone_task,
+        "tweet": tweet_task,
+        "metaprompt": metaprompt_task,
+        "simpleqa": simpleqa_task,
+        "ticket-classification": ticket_classification_task,
+    }
+    return tasks.get(task_name)
 
 
-def load_task(name_or_path: str) -> Task:
-    task = tasks.get(name_or_path)
+def load_task(name_or_path: str):
+    from promptim.trainer import Task
+
+    task = get_tasks(name_or_path)
     if task:
         return task
     # If task is not in predefined tasks, try to load from file
@@ -52,7 +52,11 @@ async def run(
     use_annotation_queue: str | None = None,
     debug: bool = False,
     commit: bool = True,
+    optimizer_config: dict | None = None,
 ):
+    from promptim.trainer import PromptOptimizer
+
+    optimizer = PromptOptimizer.from_config(optimizer_config or {})
     task = load_task(task_name)
 
     with ls.tracing_context(project_name="Optim"):
@@ -79,7 +83,7 @@ async def run(
     "--task",
     help="Task to optimize. You can pick one off the shelf or select a path "
     "(e.g., '/path/to/task.py:TaskClass'). Off-the-shelf options"
-    f" include: {', '.join([t for t in tasks if t not in ('ticket-classification', 'metaprompt')])}.",
+    " include: 'scone', 'tweet', 'simpleqa'.",
 )
 @click.option("--batch-size", type=int, default=40, help="Batch size for optimization")
 @click.option(
@@ -98,16 +102,29 @@ async def run(
     is_flag=True,
     help="Do not commit the optimized prompt to the hub",
 )
+@click.option(
+    "--config",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True),
+    help="Path to a JSON configuration file",
+)
 def main(
-    version,
-    task,
-    batch_size,
-    train_size,
-    epochs,
-    debug,
-    use_annotation_queue,
-    no_commit,
+    version: str,
+    task: str,
+    batch_size: int,
+    train_size: int,
+    epochs: int,
+    debug: bool,
+    use_annotation_queue: str | None,
+    no_commit: bool,
+    config: str | None,
 ):
+    """Optimize prompts for different tasks."""
+    optimizer_config = {}
+    if config:
+        with open(config, "r") as f:
+            config = json.load(f)
+            optimizer_config = config.get("optimizer")
+
     results = asyncio.run(
         run(
             task,
@@ -117,6 +134,7 @@ def main(
             use_annotation_queue,
             debug,
             commit=not no_commit,
+            optimizer_config=optimizer_config,
         )
     )
     print(results)

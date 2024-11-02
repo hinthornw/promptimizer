@@ -1,4 +1,5 @@
 import copy
+import json
 import random
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -20,6 +21,7 @@ from rich.panel import Panel
 from rich.progress import Progress
 from rich.text import Text
 from langsmith.evaluation import _runner, _arunner
+from langchain.chat_models import init_chat_model
 
 
 def ltq():
@@ -257,6 +259,15 @@ class PromptOptimizer:
         self.meta_prompt = meta_prompt or DEFAULT_METAPROMPT
         random.seed(seed)
         self.rng = random.Random(seed)
+
+    @classmethod
+    def from_config(cls, config: dict):
+        cp = config.copy()
+        model_config = cp.pop(
+            "model", dict(model="claude-3-5-sonnet-20241022", max_tokens_to_sample=8192)
+        )
+        model = init_chat_model(**model_config)
+        return cls(model, **cp)
 
     async def optimize_prompt(
         self,

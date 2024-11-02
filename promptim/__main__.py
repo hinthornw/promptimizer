@@ -28,10 +28,13 @@ def load_task(name_or_path: str):
 
     task = get_tasks(name_or_path)
     if task:
-        return task
+        return task, {}
     # If task is not in predefined tasks, try to load from file
     try:
-        module_path, task_variable = [part for part in name_or_path.split(":") if part]
+        with open(name_or_path, "r", encoding="utf-8") as f:
+            config = json.load(f)
+        task_path = config["task"]
+        module_path, task_variable = [part for part in task_path.split(":") if part]
 
         spec = importlib.util.spec_from_file_location("task_module", module_path)
         module = importlib.util.module_from_spec(spec)
@@ -39,7 +42,7 @@ def load_task(name_or_path: str):
         task = getattr(module, task_variable)
         if not isinstance(task, Task):
             raise ValueError
-        return task
+        return task, config
     except Exception as e:
         raise ValueError(f"Could not load task from {name_or_path}: {e}")
 
@@ -52,12 +55,11 @@ async def run(
     use_annotation_queue: str | None = None,
     debug: bool = False,
     commit: bool = True,
-    optimizer_config: dict | None = None,
 ):
+    task, config = load_task(task_name)
     from promptim.trainer import PromptOptimizer
 
-    optimizer = PromptOptimizer.from_config(optimizer_config or {})
-    task = load_task(task_name)
+    optimizer = PromptOptimizer.from_config(config.get("optimizer_config", {}))
 
     with ls.tracing_context(project_name="Optim"):
         prompt, score = await optimizer.optimize_prompt(
@@ -81,9 +83,8 @@ async def run(
 @click.option("--version", type=click.Choice(["1"]), required=True)
 @click.option(
     "--task",
-    help="Task to optimize. You can pick one off the shelf or select a path "
-    "(e.g., '/path/to/task.py:TaskClass'). Off-the-shelf options"
-    " include: 'scone', 'tweet', 'simpleqa'.",
+    help="Task to optimize. You can pick one off the shelf or select a path to a config file. "
+    "Example: 'examples/tweet_writer/config.json",
 )
 @click.option("--batch-size", type=int, default=40, help="Batch size for optimization")
 @click.option(
@@ -102,11 +103,6 @@ async def run(
     is_flag=True,
     help="Do not commit the optimized prompt to the hub",
 )
-@click.option(
-    "--config",
-    type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True),
-    help="Path to a JSON configuration file",
-)
 def main(
     version: str,
     task: str,
@@ -116,14 +112,8 @@ def main(
     debug: bool,
     use_annotation_queue: str | None,
     no_commit: bool,
-    config: str | None,
 ):
     """Optimize prompts for different tasks."""
-    optimizer_config = {}
-    if config:
-        with open(config, "r") as f:
-            config = json.load(f)
-            optimizer_config = config.get("optimizer")
 
     results = asyncio.run(
         run(
@@ -134,7 +124,6 @@ def main(
             use_annotation_queue,
             debug,
             commit=not no_commit,
-            optimizer_config=optimizer_config,
         )
     )
     print(results)

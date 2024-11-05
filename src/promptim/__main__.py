@@ -35,19 +35,24 @@ def load_task(name_or_path: str):
     try:
         with open(name_or_path, "r", encoding="utf-8") as f:
             config = json.load(f)
-        task_path = config["task"]
-        module_path, task_variable = [part for part in task_path.split(":") if part]
+        evaluators_path = config["evaluators"]
+        module_path, evaluators_variable = [
+            part for part in evaluators_path.split(":") if part
+        ]
         # First try to load it relative to the config path
         config_dir = os.path.dirname(name_or_path)
         relative_module_path = os.path.join(config_dir, module_path)
         if os.path.exists(relative_module_path):
             module_path = relative_module_path
-        spec = importlib.util.spec_from_file_location("task_module", module_path)
+        spec = importlib.util.spec_from_file_location("evaluators_module", module_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
-        task = getattr(module, task_variable)
-        if not isinstance(task, Task):
-            task = Task.from_dict(task)
+        evaluators = getattr(module, evaluators_variable)
+        if not isinstance(evaluators, list):
+            raise ValueError(
+                f"Expected evaluators to be a list, but got {type(evaluators).__name__}"
+            )
+        task = Task.from_dict({**config, "evaluators": evaluators})
         return task, config
     except Exception as e:
         raise ValueError(f"Could not load task from {name_or_path}: {e}")
@@ -215,42 +220,53 @@ def create_task(path: str, name: str):
     os.makedirs(path, exist_ok=True)
 
     config = {
-        "task": "./task.py:example_task",
+        "name": "Tweet Generator",
+        "dataset": name,
+        "evaluators": "./task.py:evaluators",
         "optimizer": {
             "model": {
                 "model": "claude-3-5-sonnet-20241022",
                 "max_tokens_to_sample": 8192,
             }
         },
+        "initial_prompt": {"identifier": identifier},
+        "evaluator_descriptions": {
+            "under_180_chars": "Checks if the tweet is under 180 characters. 1 if true, 0 if false.",
+            "no_hashtags": "Checks if the tweet contains no hashtags. 1 if true, 0 if false.",
+            "multiline": "Fails if the tweet is not multiple lines. 1 if true, 0 if false. 0 is bad.",
+        },
     }
 
     with open(os.path.join(path, "config.json"), "w") as f:
         json.dump(config, f, indent=2)
 
-    task_template = f"""
+    task_template = """
+# You can replace these evaluators with your own.
+# See https://docs.smith.langchain.com/evaluation/how_to_guides/evaluation/evaluate_llm_application#use-custom-evaluators
+# for more information
+def under_180_chars(run, example):
+    \"\"\"Evaluate if the tweet is under 180 characters.\"\"\"
+    result = run.outputs.get("tweet", "")
+    score = int(len(result) < 180)
+    comment = "Pass" if score == 1 else "Fail"
+    return {
+        "key": "under_180_chars",
+        "score": score,
+        "comment": comment,
+    }
+
 def no_hashtags(run, example):
     \"\"\"Evaluate if the tweet contains no hashtags.\"\"\"
     result = run.outputs.get("tweet", "")
     score = int("#" not in result)
     comment = "Pass" if score == 1 else "Fail"
-    return {{
+    return {
         "key": "no_hashtags",
         "score": score,
         "comment": comment,
-    }}
+    }
 
-example_task = dict(
-    name="{name}",
-    dataset="{name}",
-    initial_prompt={{
-        "identifier": "{identifier}",
-        "model_config": {{"model": "claude-3-5-sonnet-20241022"}}
-    }},
-    evaluators=[no_hashtags],
-    evaluator_descriptions={{
-        "no_hashtags": "Fails if the tweet contains any hashtags. 1 if true, 0 if false. 0 is bad.",
-    }},
-)
+evaluators = [multiple_lines, no_hashtags, under_180_chars]
 """
 
     with open(os.path.join(path, "task.py"), "w") as f:

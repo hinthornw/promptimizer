@@ -230,7 +230,9 @@ class Task:
     @classmethod
     def from_dict(cls, d: dict):
         d_ = d.copy()
-        return cls(**{"initial_prompt": PromptConfig(**d_.pop("initial_prompt")), **d_})
+        kwargs = {"initial_prompt": PromptConfig(**d_.pop("initial_prompt")), **d_}
+        kwargs = {k: v for k, v in kwargs.items() if k in cls.__annotations__}
+        return cls(**kwargs)
 
     def describe(self):
         descript = self.description if self.description else self.name

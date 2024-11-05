@@ -310,9 +310,41 @@ class PromptOptimizer:
                 border_style="bold",
             )
         )
-        dev_examples = list(
-            self.client.list_examples(dataset_name=task.dataset, splits=["dev"])
-        )
+        splits = {
+            split
+            for split in self.client.list_dataset_splits(dataset_name=task.dataset)
+        }
+        with Progress() as progress:
+            progress.add_task("[cyan]Loading data...", total=1)
+            if "train" not in splits or "dev" not in splits or "test" not in splits:
+                progress.console.print(
+                    "[yellow]Warning: train/dev/test splits not found. Automatically splitting dataset.[/yellow]"
+                )
+                all_examples = list(
+                    self.client.list_examples(dataset_name=task.dataset)
+                )
+                total = len(all_examples)
+                train_size = int(0.8 * total)
+                dev_size = int(0.1 * total)
+                self.rng.shuffle(all_examples)
+                train_examples = all_examples[:train_size]
+                dev_examples = all_examples[train_size : train_size + dev_size]
+                test_examples = all_examples[train_size + dev_size :]
+            else:
+                train_examples = list(
+                    self.client.list_examples(
+                        dataset_name=task.dataset, splits=["train"]
+                    )
+                )
+                dev_examples = list(
+                    self.client.list_examples(dataset_name=task.dataset, splits=["dev"])
+                )
+                test_examples = list(
+                    self.client.list_examples(
+                        dataset_name=task.dataset, splits=["test"]
+                    )
+                )
+            progress.update(progress.tasks[0], advance=1)
         with Progress() as progress:
             main_task = progress.add_task("[cyan]Optimizing prompt...", total=100)
 
@@ -350,9 +382,6 @@ class PromptOptimizer:
             # Step 2: Train
             progress.update(
                 main_task, advance=10, description="[cyan]Training prompt..."
-            )
-            train_examples = list(
-                self.client.list_examples(dataset_name=task.dataset, splits=["train"])
             )
 
             epoch_task = progress.add_task("[green]Epochs", total=epochs)
@@ -472,9 +501,7 @@ class PromptOptimizer:
             )
             del train_examples
             del dev_examples
-            test_examples = list(
-                self.client.list_examples(dataset_name=task.dataset, splits=["test"])
-            )
+
             initial_test_results = await self._evaluate_prompt(
                 task.initial_prompt,
                 task,

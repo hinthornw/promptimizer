@@ -6,6 +6,7 @@ from typing import Optional
 
 import click
 import langsmith as ls
+from langsmith.utils import LangSmithNotFoundError
 
 
 def get_tasks(task_name: str):
@@ -144,11 +145,167 @@ def train(
     print(results)
 
 
-@cli.command()
+@cli.group()
+def create():
+    """Commands for creating new tasks and examples."""
+    pass
+
+
+@create.command("task")
 @click.argument("path", type=click.Path(file_okay=False, dir_okay=True))
 @click.argument("name", type=str)
-def create_task(path: str, name: str):
-    """Create a new task directory with config.json, task file, and example dataset."""
+@click.option("--prompt-name", required=True, help="Name of the prompt in LangSmith")
+@click.option("--dataset-name", required=True, help="Name of the dataset in LangSmith")
+def create_task(path: str, name: str, prompt_name: str, dataset_name: str):
+    """Create a new task directory with config.json and task file for a custom prompt and dataset."""
+    from langsmith import Client
+    from langchain_core.prompts.structured import StructuredPrompt
+    from langchain_core.prompts import ChatPromptTemplate
+    from langchain_core.runnables import RunnableSequence, RunnableBinding
+
+    client = Client()
+    if not client.api_key:
+        raise ValueError("LANGSMITH_API_KEY required to create the task.")
+
+    # Fetch prompt
+    try:
+        prompt_repo = client.get_prompt(prompt_name)
+        chain = client.pull_prompt(prompt_name, include_model=True)
+        if isinstance(chain, ChatPromptTemplate):
+            prompt = chain
+        elif isinstance(chain, RunnableSequence):
+            prompt = chain.first
+        else:
+            raise ValueError(f"Unrecognized prompt format: {chain}")
+    except Exception as e:
+        raise ValueError(f"Could not fetch prompt '{prompt_name}': {e}")
+    expected_imports = "\nfrom langchain_core.messages import AIMessage"
+    expected_run_outputs = "output: AIMessage"
+    if isinstance(prompt, StructuredPrompt):
+        expected_imports = ""
+        try:
+            properties = prompt.schema_["properties"]
+            output_keys = list(properties.keys())
+            type_map = {
+                "string": "str",
+                "integer": "int",
+                "number": "float",
+                "array": "list",
+                "object": "dict",
+                "boolean": "bool",
+                "null": "None",
+            }
+            expected_run_outputs = "\n    ".join(
+                f'{k.replace(" ", "_").replace("-", "_")}: {type_map.get(properties[k].get("type", ""), "Any")}'
+                for k in output_keys
+            )
+        except Exception:
+            pass
+    elif isinstance(chain.steps[1], RunnableBinding) and chain.steps[1].kwargs.get(
+        "tools"
+    ):
+        tools = chain.steps[1].kwargs.get("tools")
+        tool_names = [
+            t.get("function", {}).get("name")
+            for t in tools
+            if t.get("function", {}).get("name")
+        ]
+        expected_run_outputs = f"# AI message contains optional tool_calls from your prompt\n    # Valid names: {tool_names}\n    output: AIMessage"
+
+    identifier = prompt_repo.id.split("?")[0].replace(
+        "https://smith.langchain.com/prompts/", ""
+    )
+    identifier = ":".join(identifier.rsplit("/", maxsplit=1))
+
+    # Fetch dataset
+    if dataset_name.startswith("https://"):
+        ds = client.clone_public_dataset(dataset_name)
+        dataset_name = ds.name
+    try:
+        _ = client.read_dataset(dataset_name=dataset_name)
+    except LangSmithNotFoundError:
+        create_dataset = click.confirm(
+            f"Dataset '{dataset_name}' not found. Would you like to create it?",
+            default=True,
+        )
+        if create_dataset:
+            _ = client.create_dataset(dataset_name=dataset_name)
+            click.echo(f"Dataset '{dataset_name}' created successfully.")
+        else:
+            raise ValueError(
+                f"Dataset '{dataset_name}' does not exist and was not created."
+            )
+    except Exception as e:
+        raise ValueError(f"Could not fetch dataset '{dataset_name}': {e}") from e
+
+    # Create task directory
+    os.makedirs(path, exist_ok=True)
+
+    # Create config.json
+    config = {
+        "name": name,
+        "dataset": dataset_name,
+        "evaluators": "./task.py:evaluators",
+        "optimizer": {
+            "model": {
+                "model": "claude-3-5-sonnet-20241022",
+                "max_tokens_to_sample": 8192,
+            }
+        },
+        "initial_prompt": {"identifier": identifier},
+    }
+
+    with open(os.path.join(path, "config.json"), "w") as f:
+        json.dump(config, f, indent=2)
+
+    # Create task.py with placeholder evaluators
+    task_template = f"""from typing_extensions import TypedDict{expected_imports}
+from langsmith.schemas import Run, Example
+
+# Replace these evaluators with your own custom evaluators
+# The run.outputs typically will contain one of the following:
+# If you're optimizing a "StructuredPrompt" (with schema), the outputs
+# should contain the extracted object
+# If you're optimizing a different type of prompt, you will typically
+# see the AIMessage in run.outputs['output']. E.g., you can access the text
+# content in run.outputs['output'].content
+# If you are defining a custom system, then you can access the output of that system directly
+
+
+class Outputs(TypedDict):
+    {expected_run_outputs}
+
+    
+def example_evaluator(run: Run, example: Example) -> dict:
+    \"\"\"An example evaluator.\"\"\"
+    outputs: Outputs = run.outputs
+    # Implement your evaluation logic here
+    return {{
+        "key": "example_evaluator",
+        "score": 1,  # Replace with actual score
+        "comment": "Example evaluation",
+    }}
+
+
+evaluators = [example_evaluator]
+"""
+
+    with open(os.path.join(path, "task.py"), "w") as f:
+        f.write(task_template.strip())
+
+    print(f"Task '{name}' created at {path}")
+    print(f"Using prompt: {prompt_name}")
+    print(f"Using dataset: {ds.url}")
+    print(
+        f"Remember to implement your custom evaluators in {os.path.join(path, 'task.py')}"
+    )
+
+
+@create.command("example")
+@click.argument("path", type=click.Path(file_okay=False, dir_okay=True))
+@click.argument("name", type=str)
+def create_example_task(path: str, name: str):
+    """Create an example task directory with config.json, task file, and example dataset."""
     # Create example dataset
     from langsmith import Client
 

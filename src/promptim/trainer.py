@@ -376,97 +376,50 @@ class PromptOptimizer:
             )
             progress.update(ptsk, advance=1)
 
-        console = Console()
-        main_progress = Progress(
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
-            console=console,
-        )
-        main_task = main_progress.add_task("[cyan]Optimizing prompt...", total=100)
-        epoch_task = main_progress.add_task("[green]Training Epoch", total=epochs)
-
-        # Step 1: Get baseline scores
-        main_progress.update(
-            main_task,
-            advance=10,
-            description="[cyan]Getting baseline dev set scores...",
-        )
-        if task.baseline_experiment:
-            baseline_scores = await self._fetch_baseline_metrics(
-                task.baseline_experiment
+        with Progress() as progress:
+            main_task = progress.add_task(
+                "[cyan]Optimizing prompt...", total=epochs + 2
             )
-        else:
-            baseline_experiment_results = await self._evaluate_prompt(
-                current_prompt,
-                task,
-                dev_examples,
-                debug=debug,
-                system_config=system_config,
+
+            # Step 1: Get baseline scores
+            progress.update(
+                main_task, advance=10, description="[cyan]Getting baseline scores..."
             )
-            baseline_scores = await self.calculate_scores(baseline_experiment_results)
-        best_score = (
-            sum(baseline_scores.values()) / len(baseline_scores)
-            if baseline_scores
-            else None
-        )
-        baseline_scores_output = "[cyan]Scores for baseline prompt:\n"
-        for metric, score in baseline_scores.items():
-            baseline_scores_output += f"  {metric}: {score:.4f}\n"
-        baseline_scores_output += f"  Average of baseline scores: {best_score:.4f}"
-        console.print(baseline_scores_output)
-        console.print()
+            if task.baseline_experiment:
+                baseline_scores = await self._fetch_baseline_metrics(
+                    task.baseline_experiment
+                )
+            else:
+                baseline_experiment_results = await self._evaluate_prompt(
+                    current_prompt,
+                    task,
+                    dev_examples,
+                    debug=debug,
+                    system_config=system_config,
+                )
+                baseline_scores = await self.calculate_scores(
+                    baseline_experiment_results
+                )
+            best_score = (
+                sum(baseline_scores.values()) / len(baseline_scores)
+                if baseline_scores
+                else None
+            )
+            baseline_scores_output = "[cyan]Baseline scores:\n"
+            for metric, score in baseline_scores.items():
+                baseline_scores_output += f"  {metric}: {score:.4f}\n"
+            baseline_scores_output += f"  Average over dev set: {best_score:.4f}"
+            baseline_scores_output += "\n\nBeginning optimization."
+            progress.console.print(baseline_scores_output)
+            progress.console.print()
 
-        # Step 2: Train
-        main_progress.update(
-            main_task,
-            advance=10,
-            description="[cyan]Beginning prompt optimization...",
-        )
+            # Step 2: Train
+            progress.update(
+                main_task,
+                advance=1,
+                description="[cyan]Optimizing prompt on epoch 1...",
+            )
 
-        def create_table(known_metrics: set[str]) -> Table:
-            table = Table(title="Training Progress:")
-            table.add_column("Epoch", justify="right")
-            table.add_column("Batch", justify="right")
-            table.add_column("Prompt ID", justify="left")
-            table.add_column("Avg Score", justify="right")
-            for metric in sorted(known_metrics):
-                table.add_column(metric, justify="right")
-            return table
-
-        def format_row(
-            epoch: int,
-            batch: int,
-            prompt_id: str,
-            avg_score: float,
-            scores: dict[str, float],
-            epochs: int,
-            batches: int,
-            known_metrics: set[str],
-        ) -> list[str]:
-            row = [
-                f"{epoch+1}/{epochs}",
-                f"{batch+1}/{batches}",
-                str(prompt_id),
-                f"{avg_score:.4f}",
-            ]
-            for metric in sorted(known_metrics):
-                score = scores.get(metric)
-                if score is None:
-                    row.append("-")
-                else:
-                    row.append(f"{score:.4f}")
-            return row
-
-        recent_batches = []
-        known_metrics: set[str] = set()
-        table = create_table(known_metrics)
-
-        with Live(
-            Group(table, Panel(main_progress, title="Progress", border_style="green")),
-            console=console,
-            refresh_per_second=4,
-        ) as live:
             for epoch in range(epochs):
                 self.rng.shuffle(train_examples)
                 if train_size:
@@ -477,10 +430,12 @@ class PromptOptimizer:
                     for i in range(0, len(train_examples), batch_size)
                 ]
 
-                batch_task = main_progress.add_task(
-                    f"[yellow]Epoch {epoch+1} minibatches", total=len(batches)
+                batch_task = progress.add_task(
+                    f"[yellow]Epoch {epoch+1} batches", total=len(batches)
                 )
+                all_train_scores = []
                 experiment_name = None
+                avg_score = -1
                 for bix, batch in enumerate(batches):
                     if (
                         bix == 0
@@ -509,74 +464,20 @@ class PromptOptimizer:
                             results,
                             use_annotation_queue,
                             task,
-                            main_progress,
+                            progress,
                         )
                     train_scores = await self.calculate_scores(results)
-
-                    # Check for new metrics
-                    new_metrics = set(train_scores.keys()) - known_metrics
-                    if new_metrics:
-                        known_metrics.update(new_metrics)
-                        table = create_table(known_metrics)
-                        # Re-add existing data
-                        for e, b, pid, avg, scores in recent_batches:
-                            table.add_row(
-                                *format_row(
-                                    e,
-                                    b,
-                                    pid,
-                                    avg,
-                                    scores,
-                                    epochs,
-                                    len(batches),
-                                    known_metrics,
-                                )
-                            )
-
                     train_score = (
                         sum(train_scores.values()) / len(train_scores)
                         if train_scores
                         else None
                     )
-
-                    # Keep only the last 5 batches
-                    if len(recent_batches) >= 5:
-                        recent_batches.pop(0)
-                    recent_batches.append(
-                        (
-                            epoch,
-                            bix,
-                            current_prompt.identifier,
-                            train_score,
-                            train_scores,
-                        )
+                    all_train_scores.append(train_score)
+                    avg_score = sum(all_train_scores) / len(all_train_scores)
+                    progress.update(
+                        batch_task,
+                        description=f"[yellow]Epoch {epoch+1} (Avg training score: {avg_score:.4f})",
                     )
-
-                    # Update the table
-                    table.rows.clear()
-                    for e, b, pid, avg, scores in recent_batches:
-                        table.add_row(
-                            *format_row(
-                                e,
-                                b,
-                                pid,
-                                avg,
-                                scores,
-                                epochs,
-                                len(batches),
-                                known_metrics,
-                            )
-                        )
-
-                    live.update(
-                        Group(
-                            table,
-                            Panel(
-                                main_progress, title="Progress", border_style="green"
-                            ),
-                        )
-                    )
-
                     improved = await self.apply_metaprompt(
                         current_prompt=current_prompt,
                         other_attempts=other_attempts,
@@ -584,15 +485,17 @@ class PromptOptimizer:
                         task=task,
                         results=results,
                     )
-                    improved.identifier = improved.push_prompt(client=self.client)
                     current_prompt = improved
-                    main_progress.update(batch_task, advance=1)
+
+                    progress.update(
+                        batch_task,
+                        advance=1,
+                        description=f"[yellow]Epoch {epoch+1} (Avg Score: {avg_score:.4f})",
+                    )
                     if next_action != "continue":
                         break
-
-                main_progress.update(
-                    main_task, description="[cyan]Evaluating on dev set..."
-                )
+                # Evaluate on dev set after each epoch
+                progress.update(main_task, description="[cyan]Evaluating on dev set...")
                 dev_results = await self._evaluate_prompt(
                     current_prompt,
                     task,
@@ -604,25 +507,31 @@ class PromptOptimizer:
                 dev_score = (
                     sum(dev_scores.values()) / len(dev_scores) if dev_scores else None
                 )
+                progress.update(
+                    batch_task,
+                    description=f'[yellow]Epoch {epoch+1} (Dev: {f"{dev_score:.4f}" if dev_score is not None else "-"}, Train: {f"{avg_score:.4f}" if avg_score is not None else "-"})',
+                )
+
                 if dev_score is not None and dev_score > best_score:
                     if best_prompt not in other_attempts:
                         other_attempts.append(best_prompt)
                     best_score = dev_score
                     best_prompt = current_prompt
-                    main_progress.print(
+                    progress.console.print(
                         f"New best score: {best_score:.4f} (surpassed previous best)"
                     )
-                    main_progress.print("Average of:")
+                    progress.console.print("Average of:")
                     for metric, score in dev_scores.items():
-                        main_progress.print(f"  {metric}: {score:.4f}")
+                        progress.console.print(f"  {metric}: {score:.4f}")
                 else:
                     other_attempts.append(current_prompt)
                     current_prompt = best_prompt
-                    main_progress.print(
+                    progress.console.print(
                         f"Score {dev_score:.4f} did not surpass best score {best_score:.4f}"
                     )
+                progress.console.print()
 
-                main_progress.print(
+                progress.console.print(
                     Panel(
                         f"[bold]Epoch {epoch+1}[/bold]\n"
                         f"Dev score: [cyan]{dev_score:.4f}[/cyan]\n"
@@ -632,11 +541,15 @@ class PromptOptimizer:
                         border_style="bold",
                     )
                 )
-                main_progress.print()
-                main_progress.update(epoch_task, advance=1)
+                progress.console.print()
+                progress.update(
+                    main_task,
+                    advance=1,
+                    description="[cyan]Optimizing prompt...",
+                )
 
             # Step 3: Test
-            main_progress.update(
+            progress.update(
                 main_task, advance=10, description="[cyan]Running final tests..."
             )
             del train_examples
@@ -656,21 +569,26 @@ class PromptOptimizer:
                 debug=debug,
                 system_config=system_config,
             )
-            main_progress.update(
+            progress.update(
                 main_task, advance=10, description="[cyan]Optimization complete!"
             )
         # Print final report
-        richprint(
-            Panel.fit(
-                f"[bold green]Optimization Results:[/bold green]\n\n"
-                f"[cyan]Initial Prompt Performance:[/cyan]\n"
-                f"{await self.calculate_scores(initial_test_results)}\n\n"
-                f"[cyan]Optimized Prompt Performance:[/cyan]\n"
-                f"{await self.calculate_scores(final_test_results)}",
-                title="Final Report",
-                border_style="bold",
+        initial_scores = await self.calculate_scores(initial_test_results)
+        final_scores = await self.calculate_scores(final_test_results)
+        
+        table = Table(title="Optimization Results", show_header=True, header_style="bold magenta")
+        table.add_column("Metric", style="cyan", no_wrap=True)
+        table.add_column("Initial Score", justify="right", style="green")
+        table.add_column("Final Score", justify="right", style="green")
+        
+        for metric in initial_scores.keys():
+            table.add_row(
+                metric,
+                f"{initial_scores[metric]:.4f}",
+                f"{final_scores[metric]:.4f}"
             )
-        )
+        
+        richprint(Panel(table, title="Final Report", border_style="bold"))
 
         # Print prompt diff
         _print_rich_diff(

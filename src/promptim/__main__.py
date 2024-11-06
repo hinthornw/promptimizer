@@ -85,7 +85,7 @@ async def run(
         )
     if commit and task.initial_prompt.identifier is not None:
         prompt.push_prompt(
-            task.initial_prompt.identifier.rsplit(":", maxsplit=1)[0],
+            identifier=task.initial_prompt.identifier.rsplit(":", maxsplit=1)[0],
             include_model_info=True,
             client=optimizer.client,
         )

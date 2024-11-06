@@ -64,7 +64,7 @@ async def run(
     batch_size: int,
     train_size: int,
     epochs: int,
-    use_annotation_queue: Optional[str] = None,
+    annotation_queue: Optional[str] = None,
     debug: bool = False,
     commit: bool = True,
 ):
@@ -79,13 +79,15 @@ async def run(
             batch_size=batch_size,
             train_size=train_size,
             epochs=epochs,
-            use_annotation_queue=use_annotation_queue,
+            annotation_queue=annotation_queue,
             debug=debug,
+            commit_prompts=commit,
         )
     if commit and task.initial_prompt.identifier is not None:
-        optimizer.client.push_prompt(
-            task.initial_prompt.identifier.rsplit(":", maxsplit=1)[0],
-            object=prompt.load(optimizer.client),
+        prompt.push_prompt(
+            identifier=task.initial_prompt.identifier.rsplit(":", maxsplit=1)[0],
+            include_model_info=True,
+            client=optimizer.client,
         )
 
     return prompt, score
@@ -111,7 +113,7 @@ def cli():
 @click.option("--epochs", type=int, default=2, help="Number of epochs for optimization")
 @click.option("--debug", is_flag=True, help="Enable debug mode")
 @click.option(
-    "--use-annotation-queue",
+    "--annotation-queue",
     type=str,
     default=None,
     help="The name of the annotation queue to use. Note: we will delete the queue whenever you resume training (on every batch).",
@@ -127,7 +129,7 @@ def train(
     train_size: int,
     epochs: int,
     debug: bool,
-    use_annotation_queue: Optional[str],
+    annotation_queue: Optional[str],
     no_commit: bool,
 ):
     """Train and optimize prompts for different tasks."""
@@ -137,12 +139,17 @@ def train(
             batch_size,
             train_size,
             epochs,
-            use_annotation_queue,
+            annotation_queue,
             debug,
             commit=not no_commit,
         )
     )
-    print(results)
+    prompt_config, score = results
+    print("Final\n\n")
+    print(prompt_config.get_prompt_str())
+    print("\n\n")
+    print(f"Identifier: {prompt_config.identifier}")
+    print(f"Score: {score}")
 
 
 @cli.group()
@@ -159,7 +166,6 @@ def create():
 def create_task(path: str, name: str, prompt: str, dataset: str):
     """Create a new task directory with config.json and task file for a custom prompt and dataset."""
     from langsmith import Client
-    from langchain_core.prompts.structured import StructuredPrompt
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.runnables import RunnableSequence, RunnableBinding
 
@@ -182,33 +188,12 @@ def create_task(path: str, name: str, prompt: str, dataset: str):
     expected_imports = "from langchain_core.messages import AIMessage"
     expected_run_outputs_type = ""
     expected_run_outputs = 'predicted: AIMessage = run.outputs["output"]'
-    if isinstance(prompt, StructuredPrompt):
-        expected_imports = "from typing_extensions import TypedDict"
-        try:
-            properties = prompt.schema_["properties"]
-            output_keys = list(properties.keys())
-            type_map = {
-                "string": "str",
-                "integer": "int",
-                "number": "float",
-                "array": "list",
-                "object": "dict",
-                "boolean": "bool",
-                "null": "None",
-            }
-            expected_run_outputs_type = "\n    ".join(
-                f'{k.replace(" ", "_").replace("-", "_")}: {type_map.get(properties[k].get("type", ""), "Any")}'
-                for k in output_keys
-            )
-            expected_run_outputs_type = f"""
-class Outputs(TypedDict):
-    {expected_run_outputs_type}
-"""
-            expected_run_outputs = "predicted: Outputs = run.outputs"
-        except Exception:
-            pass
-    elif isinstance(chain.steps[1], RunnableBinding) and chain.steps[1].kwargs.get(
-        "tools"
+    if isinstance(prompt, ChatPromptTemplate):
+        pass
+    elif (
+        isinstance(chain, RunnableSequence)
+        and isinstance(chain.steps[1], RunnableBinding)
+        and chain.steps[1].kwargs.get("tools")
     ):
         tools = chain.steps[1].kwargs.get("tools")
         tool_names = [
@@ -217,6 +202,8 @@ class Outputs(TypedDict):
             if t.get("function", {}).get("name")
         ]
         expected_run_outputs = f"# AI message contains optional tool_calls from your prompt\n    # Example tool names: {tool_names}\n    {expected_run_outputs}"
+    else:
+        raise ValueError(f"Unexpected prompt type: {type(prompt)}\n\n{prompt}")
     identifier = prompt_repo.repo_handle
 
     # Fetch dataset
@@ -240,12 +227,29 @@ class Outputs(TypedDict):
 
     # Create task directory
     os.makedirs(path, exist_ok=True)
+    example = next(client.list_examples(dataset_id=ds.id, limit=1))
+
+    def json_comment(d: dict, indent: int = 4):
+        return "\n".join(
+            f"{' ' * indent}#     {line}"
+            for line in json.dumps(d, indent=2).splitlines()
+        )
+
+    example_inputs = json_comment(example.inputs)
+    example_outputs = (
+        json_comment(example.outputs) if example.outputs is not None else "# None"
+    )
 
     # Create config.json
     config = {
         "name": name,
         "dataset": dataset,
         "evaluators": "./task.py:evaluators",
+        "evaluator_descriptions": {
+            "my_example_criterion": "CHANGEME: This is a description of what the example criterion is testing."
+            " It is provided to the metaprompt "
+            "to improve how it responds to different results."
+        },
         "optimizer": {
             "model": {
                 "model": "claude-3-5-sonnet-20241022",
@@ -262,27 +266,48 @@ class Outputs(TypedDict):
         json.dump(config, f, indent=2)
 
     # Create task.py with placeholder evaluators
-    task_template = f"""{expected_imports}
+    task_template = f"""\"\"\"Evaluators to optimize task {name}.
+
+THIS IS A TEMPLATE FOR YOU TO CHANGE!
+
+Evaluators compute scores for prompts run over the configured dataset:
+{ds.url}
+\"\"\"
+{expected_imports}
 from langsmith.schemas import Run, Example
 
-# Replace these evaluators with your own custom evaluators
-# The run.outputs typically will contain one of the following:
-# If you're optimizing a "StructuredPrompt" (with schema), the outputs
-# should contain the extracted object
-# If you're optimizing a different type of prompt, you will typically
-# see the AIMessage in run.outputs['output']. E.g., you can access the text
-# content in run.outputs['output'].content
-# If you are defining a custom system, then you can access the output of that system directly
+# Modify these evaluators to measure the requested criteria.
+# For most prompt optimization tasks, run.outputs["output"] will contain an AIMessage
+# (Advanced usage) If you are defining a custom system to optimize, then the outputs will contain the object returned by your system
+
 
 {expected_run_outputs_type}    
 def example_evaluator(run: Run, example: Example) -> dict:
     \"\"\"An example evaluator. Larger numbers are better.\"\"\"
-    {expected_run_outputs}
+    # The Example object contains the inputs and reference labels from a single row in your dataset (if provided).
+    # Below are the inputs & outputs for the first example in the configured dataset.
+    # Link to example: {example.url}
+    # example.inputs:
+{example_inputs}
+    # example.outputs:
+{example_outputs}
+
+{expected_run_outputs}
+
     # Implement your evaluation logic here
+    score = len(str(predicted.content)) < 180  # Replace with actual score
     return {{
-        "key": "example_evaluator",
-        "score": 1,  # Replace with actual score
-        "comment": "Example evaluation. This comment instructs the LLM how to improve.",
+        # The evaluator keys here define the metric you are measuring
+        # You can provide further descriptions for these in the config.json
+        "key": "my_example_criterion",
+        "score": score,
+        "comment": (
+            "CHANGEME: It's good practice to return "
+            "information that can help the metaprompter fix mistakes, "
+            "such as Pass/Fail or expected X but got Y, etc. "
+            "This comment instructs the LLM how to improve."
+            "The placeholder metric checks that the content is less than 180 in length."
+        ),
     }}
 
 
@@ -293,7 +318,8 @@ evaluators = [example_evaluator]
         f.write(task_template.strip())
 
     print(f"Task '{name}' created at {path}")
-    print(f"Using prompt: {prompt}")
+
+    print(f"Using prompt:\n\n{prompt.pretty_repr()}\n\n")
     print(f"Using dataset: {ds.url}")
     print(
         f"Remember to implement your custom evaluators in {os.path.join(path, 'task.py')}"
@@ -398,7 +424,7 @@ def create_example_task(path: str, name: str):
 
     task_template = """
 # You can replace these evaluators with your own.
-# See https://docs.smith.langchain.com/evaluation/how_to_guides/evaluation/evaluate_llm_application#use-custom-evaluators
+# See https://docs.smith.langchain.com/evaluation/how_to_guides/evaluation/evaluate_llm_application#custom-evaluators
 # for more information
 def under_180_chars(run, example):
     \"\"\"Evaluate if the tweet is under 180 characters.\"\"\"

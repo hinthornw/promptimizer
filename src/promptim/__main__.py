@@ -81,11 +81,13 @@ async def run(
             epochs=epochs,
             use_annotation_queue=use_annotation_queue,
             debug=debug,
+            commit_prompts=commit,
         )
     if commit and task.initial_prompt.identifier is not None:
-        optimizer.client.push_prompt(
+        prompt.push_prompt(
             task.initial_prompt.identifier.rsplit(":", maxsplit=1)[0],
-            object=prompt.load(optimizer.client),
+            include_model_info=True,
+            client=optimizer.client,
         )
 
     return prompt, score
@@ -182,33 +184,12 @@ def create_task(path: str, name: str, prompt: str, dataset: str):
     expected_imports = "from langchain_core.messages import AIMessage"
     expected_run_outputs_type = ""
     expected_run_outputs = 'predicted: AIMessage = run.outputs["output"]'
-    if isinstance(prompt, StructuredPrompt):
-        expected_imports = "from typing_extensions import TypedDict"
-        try:
-            properties = prompt.schema_["properties"]
-            output_keys = list(properties.keys())
-            type_map = {
-                "string": "str",
-                "integer": "int",
-                "number": "float",
-                "array": "list",
-                "object": "dict",
-                "boolean": "bool",
-                "null": "None",
-            }
-            expected_run_outputs_type = "\n    ".join(
-                f'{k.replace(" ", "_").replace("-", "_")}: {type_map.get(properties[k].get("type", ""), "Any")}'
-                for k in output_keys
-            )
-            expected_run_outputs_type = f"""
-class Outputs(TypedDict):
-    {expected_run_outputs_type}
-"""
-            expected_run_outputs = "predicted: Outputs = run.outputs"
-        except Exception:
-            pass
-    elif isinstance(chain.steps[1], RunnableBinding) and chain.steps[1].kwargs.get(
-        "tools"
+    if isinstance(prompt, ChatPromptTemplate):
+        pass
+    elif (
+        isinstance(chain, RunnableSequence)
+        and isinstance(chain.steps[1], RunnableBinding)
+        and chain.steps[1].kwargs.get("tools")
     ):
         tools = chain.steps[1].kwargs.get("tools")
         tool_names = [
@@ -217,6 +198,8 @@ class Outputs(TypedDict):
             if t.get("function", {}).get("name")
         ]
         expected_run_outputs = f"# AI message contains optional tool_calls from your prompt\n    # Example tool names: {tool_names}\n    {expected_run_outputs}"
+    else:
+        raise ValueError(f"Unexpected prompt type: {type(prompt)}\n\n{prompt}")
     identifier = prompt_repo.repo_handle
 
     # Fetch dataset

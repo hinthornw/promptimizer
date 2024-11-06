@@ -1,7 +1,7 @@
 import langsmith as ls
 from langchain_anthropic import ChatAnthropic
 from promptim.trainer import (
-    PromptConfig,
+    PromptWrapper,
     PromptOptimizer,
     Task,
     DEFAULT_METAPROMPT,
@@ -62,7 +62,7 @@ The enhanced prompt for optimizing task-specific prompts
 class MetapromptSystem:
     """System for running the metaprompt optimization task."""
 
-    def __init__(self, task_map: dict[str, Task], meta_prompt: PromptConfig):
+    def __init__(self, task_map: dict[str, Task], meta_prompt: PromptWrapper):
         self.task_map = task_map
         self.model = ChatAnthropic(
             model="claude-3-5-sonnet-20241022", max_tokens_to_sample=8192
@@ -163,7 +163,7 @@ def metaprompt_evaluator(run, example):
     }
 
 
-prompt_config = PromptConfig(prompt_str=DEFAULT_METAPROMPT)
+prompt_config = PromptWrapper(prompt_str=DEFAULT_METAPROMPT)
 metaprompt_task = Task(
     name="Metaprompt Optimizer",
     description="A meta-optimization task that aims to improve the prompt used for optimizing task-specific prompts. This task evaluates and enhances the effectiveness of the prompt optimization process itself, leading to better performance across various language tasks.",

@@ -1,4 +1,4 @@
-from promptim.trainer import PromptConfig, Task
+from promptim.trainer import PromptWrapper, Task
 
 
 def under_180_chars(run, example):
@@ -40,7 +40,7 @@ def multiple_lines(run, example):
 tweet_task = Task(
     name="Tweet Generator",
     dataset="tweet-optim",
-    initial_prompt=PromptConfig(identifier="tweet-generator-example:c39837bd"),
+    initial_prompt=PromptWrapper(identifier="tweet-generator-example:c39837bd"),
     evaluators=[under_180_chars, no_hashtags, multiple_lines],
     evaluator_descriptions={
         "under_180_chars": "Checks if the tweet is under 180 characters. 1 if true, 0 if false.",

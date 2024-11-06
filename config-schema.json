@@ -1,0 +1,129 @@
+{
+  "$defs": {
+    "OptimizerConfig": {
+      "properties": {
+        "model": {
+          "title": "Model",
+          "type": "object"
+        }
+      },
+      "required": [
+        "model"
+      ],
+      "title": "OptimizerConfig",
+      "type": "object"
+    },
+    "PromptConfig": {
+      "properties": {
+        "identifier": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Identifier"
+        },
+        "prompt_str": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Prompt Str"
+        },
+        "model_config": {
+          "anyOf": [
+            {
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Model Config"
+        },
+        "which": {
+          "default": 0,
+          "title": "Which",
+          "type": "integer"
+        }
+      },
+      "title": "PromptConfig",
+      "type": "object"
+    }
+  },
+  "properties": {
+    "name": {
+      "title": "Name",
+      "type": "string"
+    },
+    "description": {
+      "title": "Description",
+      "type": "string"
+    },
+    "evaluator_descriptions": {
+      "title": "Evaluator Descriptions",
+      "type": "object"
+    },
+    "dataset": {
+      "title": "Dataset",
+      "type": "string"
+    },
+    "initial_prompt": {
+      "$ref": "#/$defs/PromptConfig"
+    },
+    "baseline_experiment": {
+      "anyOf": [
+        {
+          "format": "uuid",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "title": "Baseline Experiment"
+    },
+    "optimizer": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/OptimizerConfig"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "evaluators": {
+      "title": "Evaluators",
+      "type": "string"
+    },
+    "system": {
+      "title": "System",
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "description",
+    "evaluator_descriptions",
+    "dataset",
+    "initial_prompt",
+    "baseline_experiment",
+    "optimizer",
+    "evaluators",
+    "system"
+  ],
+  "title": "Config",
+  "type": "object",
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

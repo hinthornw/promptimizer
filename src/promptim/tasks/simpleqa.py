@@ -1,7 +1,7 @@
 from typing import Literal
 
 from pydantic import BaseModel, Field
-from promptim.trainer import PromptConfig, Task
+from promptim.trainer import PromptWrapper, Task
 from langchain_openai import ChatOpenAI
 
 GRADER_TEMPLATE = """Your job is to look at a question, a gold target, and a predicted answer, and then assign a grade of either ["CORRECT", "INCORRECT", "NOT_ATTEMPTED"].
@@ -111,7 +111,7 @@ simpleqa_task = Task(
     name="SimpleQA",
     description="A task to measure short-form factuality in large language models",
     dataset="simpleqa-optim",
-    initial_prompt=PromptConfig(identifier="langchain-ai/simpleqa-example:43349b82"),
+    initial_prompt=PromptWrapper(identifier="langchain-ai/simpleqa-example:43349b82"),
     evaluators=[simpleqa_evaluator],
     evaluator_descriptions={
         "simpleqa_score": "Evaluates the correctness of the answer. 1 if correct, 0 if incorrect or not attempted."

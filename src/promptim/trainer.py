@@ -18,13 +18,12 @@ from langsmith.evaluation._arunner import ExperimentResultRow
 from langsmith.schemas import Example, Run
 from pydantic import BaseModel, Field
 from rich import print as richprint
-from rich.console import Console, Group
+from rich.console import Console
 from rich.panel import Panel
-from rich.progress import Progress, BarColumn, TextColumn
-from rich.text import Text
-from rich.live import Live
+from rich.progress import Progress
 from rich.table import Table
 from langchain_core.load import dumps
+from langsmith.utils import LangSmithConflictError
 
 
 def ltq():
@@ -115,6 +114,8 @@ SystemType = Callable[[ChatPromptTemplate, dict], dict]
 
 
 # TODO: split user facing from the loadable one
+
+
 @dataclass(kw_only=True)
 class PromptConfig:
     identifier: str | None = None
@@ -125,8 +126,6 @@ class PromptConfig:
     # TODO: Support tool / schema optimization
     which: int = 0
     """Which message to optimize."""
-    _cached: ChatPromptTemplate | None = None
-    _postlude: RunnableBinding | BaseChatModel | None = None
 
     def __post_init__(self):
         if self.identifier and self.prompt_str:
@@ -135,6 +134,21 @@ class PromptConfig:
             )
         elif not self.identifier and not self.prompt_str:
             raise ValueError("Must provide either identifier or prompt_str.")
+
+
+@dataclass(kw_only=True)
+class PromptWrapper(PromptConfig):
+    _cached: ChatPromptTemplate | None = None
+    _postlude: RunnableBinding | BaseChatModel | None = None
+
+    @classmethod
+    def from_config(cls, config: PromptConfig):
+        return cls(
+            identifier=config.identifier,
+            prompt_str=config.prompt_str,
+            model_config=config.model_config,
+            which=config.which,
+        )
 
     def load(self, client: ls.Client | None = None) -> ChatPromptTemplate:
         if self._cached is None:
@@ -189,7 +203,7 @@ class PromptConfig:
         return "\n".join(formatted)
 
     @classmethod
-    def from_prior(cls, prior: "PromptConfig", output: str):
+    def from_prior(cls, prior: "PromptWrapper", output: str):
         copied = prior._cached
         if not copied:
             raise ValueError("Cannot load from unloaded prior.")
@@ -213,13 +227,16 @@ class PromptConfig:
     ) -> str:
         prompt = self.load(client)
         identifier = identifier or self.identifier.rsplit(":", maxsplit=1)[0]
-        if not include_model_info or not self._postlude:
-            new_id = client.push_prompt(identifier, object=prompt)
-        else:
-            seq = RunnableSequence(prompt, self._postlude)
-            manifest = json.loads(dumps(seq))
-            manifest["id"] = ("langsmith", "playground", "PromptPlayground")
-            new_id = client.push_prompt(identifier, object=manifest)
+        try:
+            if not include_model_info or not self._postlude:
+                new_id = client.push_prompt(identifier, object=prompt)
+            else:
+                seq = RunnableSequence(prompt, self._postlude)
+                manifest = json.loads(dumps(seq))
+                manifest["id"] = ("langsmith", "playground", "PromptPlayground")
+                new_id = client.push_prompt(identifier, object=manifest)
+        except LangSmithConflictError:
+            return identifier
 
         return ":".join(
             new_id
@@ -233,7 +250,7 @@ class PromptConfig:
 
 
 @dataclass(kw_only=True)
-class Task:
+class TaskLike:
     """Represents a specific task for prompt optimization."""
 
     name: str
@@ -241,14 +258,20 @@ class Task:
     evaluator_descriptions: dict = field(default_factory=dict)
     dataset: str
     initial_prompt: PromptConfig
+    baseline_experiment: UUID | None = None
+
+
+@dataclass(kw_only=True)
+class Task(TaskLike):
+    """Represents a specific task for prompt optimization."""
+
     evaluators: list[Callable[[Run, Example], dict]]
     system: Optional[SystemType] = None
-    baseline_experiment: UUID | None = None
 
     @classmethod
     def from_dict(cls, d: dict):
         d_ = d.copy()
-        kwargs = {"initial_prompt": PromptConfig(**d_.pop("initial_prompt")), **d_}
+        kwargs = {"initial_prompt": PromptWrapper(**d_.pop("initial_prompt")), **d_}
         kwargs = {k: v for k, v in kwargs.items() if k in cls.__annotations__}
         return cls(**kwargs)
 
@@ -268,6 +291,18 @@ class Task:
             return await self.initial_prompt._postlude.ainvoke(prompt.invoke(inputs))
 
         return prompt_system
+
+
+@dataclass(kw_only=True)
+class OptimizerConfig:
+    model: dict
+
+
+@dataclass(kw_only=True)
+class Config(TaskLike):
+    optimizer: OptimizerConfig | None
+    evaluators: str
+    system: str
 
 
 class OptimizedPromptOutput(BaseModel):
@@ -309,20 +344,21 @@ class PromptOptimizer:
         train_size: Optional[int] = None,
         batch_size: int = 40,
         epochs: int = 1,
-        use_annotation_queue: str | None = None,
+        annotation_queue: str | None = None,
         debug: bool = False,
         commit_prompts: bool = False,
-    ) -> tuple[PromptConfig, float]:
+    ) -> tuple[PromptWrapper, float]:
         """Optimizes a prompt for a specific task through multiple iterations."""
-        task.initial_prompt.load(self.client)  # check
-        current_prompt = task.initial_prompt
+        initial_prompt = PromptWrapper.from_config(task.initial_prompt)
+        initial_prompt.load(self.client)  # check
+        current_prompt = initial_prompt
         best_score = 0
-        best_prompt = task.initial_prompt
+        best_prompt = initial_prompt
         other_attempts = []
         # Print the original prompt
         richprint(
             Panel.fit(
-                f"[bold cyan]Original Prompt:[/bold cyan]\n\n{task.initial_prompt.get_prompt_str_in_context(self.client)}",
+                f"[bold cyan]Original Prompt:[/bold cyan]\n\n{initial_prompt.get_prompt_str_in_context(self.client)}",
                 title="Initial Prompt to optimize:",
                 border_style="bold",
             )
@@ -405,12 +441,28 @@ class PromptOptimizer:
                 if baseline_scores
                 else None
             )
-            baseline_scores_output = "[cyan]Baseline scores:\n"
+
+            table = Table(
+                title="Baseline Scores (Dev Set)",
+                show_header=True,
+                header_style="bold magenta",
+            )
+            table.add_column("Metric", style="cyan", no_wrap=True)
+            table.add_column("Score", justify="right", style="green")
+
             for metric, score in baseline_scores.items():
-                baseline_scores_output += f"  {metric}: {score:.4f}\n"
-            baseline_scores_output += f"  Average over dev set: {best_score:.4f}"
-            baseline_scores_output += "\n\nBeginning optimization."
-            progress.console.print(baseline_scores_output)
+                table.add_row(metric, f"{score:.4f}")
+
+            table.add_row("Average", f"{best_score:.4f}", style="bold")
+
+            progress.console.print(
+                Panel(
+                    table,
+                    title="[bold]Initial Prompt Evaluation[/bold]",
+                    border_style="cyan",
+                )
+            )
+            progress.console.print("\n[bold cyan]Beginning optimization.[/bold cyan]")
             progress.console.print()
 
             # Step 2: Train
@@ -459,10 +511,10 @@ class PromptOptimizer:
                             system_config=system_config,
                         )
                     next_action = "continue"
-                    if use_annotation_queue:
+                    if annotation_queue:
                         results, next_action = await self._wait_for_annotation_queue(
                             results,
-                            use_annotation_queue,
+                            annotation_queue,
                             task,
                             progress,
                         )
@@ -486,6 +538,8 @@ class PromptOptimizer:
                         results=results,
                     )
                     current_prompt = improved
+                    if commit_prompts:
+                        current_prompt.push_prompt(client=self.client)
 
                     progress.update(
                         batch_task,
@@ -556,7 +610,7 @@ class PromptOptimizer:
             del dev_examples
 
             initial_test_results = await self._evaluate_prompt(
-                task.initial_prompt,
+                initial_prompt,
                 task,
                 test_examples,
                 debug=debug,
@@ -575,24 +629,24 @@ class PromptOptimizer:
         # Print final report
         initial_scores = await self.calculate_scores(initial_test_results)
         final_scores = await self.calculate_scores(final_test_results)
-        
-        table = Table(title="Optimization Results", show_header=True, header_style="bold magenta")
+
+        table = Table(
+            title="Optimization Results", show_header=True, header_style="bold magenta"
+        )
         table.add_column("Metric", style="cyan", no_wrap=True)
         table.add_column("Initial Score", justify="right", style="green")
         table.add_column("Final Score", justify="right", style="green")
-        
+
         for metric in initial_scores.keys():
             table.add_row(
-                metric,
-                f"{initial_scores[metric]:.4f}",
-                f"{final_scores[metric]:.4f}"
+                metric, f"{initial_scores[metric]:.4f}", f"{final_scores[metric]:.4f}"
             )
-        
+
         richprint(Panel(table, title="Final Report", border_style="bold"))
 
         # Print prompt diff
         _print_rich_diff(
-            task.initial_prompt.get_prompt_str_in_context(),
+            initial_prompt.get_prompt_str_in_context(),
             best_prompt.get_prompt_str_in_context(),
             title="Final Prompt Updates",
         )
@@ -621,13 +675,16 @@ class PromptOptimizer:
                 name=queue_name,
                 description=f"Annotation queue used for prompt optimization on {task.name}",
             )
-        runs = [r["run"].id for r in results]
-        for _ in range(10):
+        runs = [str(r["run"].id) for r in results]
+        N = 10
+        for i in range(N):
             try:
-                self.client.add_runs_to_annotation_queue(q.id, run_ids=runs)
+                self.client.add_runs_to_annotation_queue(str(q.id), run_ids=runs)
                 break
-            except ValueError:
-                time.sleep(1)
+            except Exception:
+                if i == N - 1:
+                    raise
+                time.sleep(i)
 
         # Now, log instrutions and await user input in the terminal.
         # User input can either continue or break the loop
@@ -695,7 +752,7 @@ class PromptOptimizer:
 
     async def _evaluate_prompt(
         self,
-        prompt_config: PromptConfig,
+        prompt_config: PromptWrapper,
         task: Task,
         data: str | list,
         debug: bool = False,
@@ -743,12 +800,12 @@ class PromptOptimizer:
 
     async def apply_metaprompt(
         self,
-        current_prompt: PromptConfig,
+        current_prompt: PromptWrapper,
         meta_prompt: str,
         task: Task,
         results: list[ExperimentResultRow],
         other_attempts: list | None = None,
-    ) -> PromptConfig:
+    ) -> PromptWrapper:
         annotated_results = self._format_results(results)
         return await self._generate_improved_prompt(
             current_prompt,
@@ -777,12 +834,12 @@ class PromptOptimizer:
 
     async def _generate_improved_prompt(
         self,
-        current_prompt: PromptConfig,
+        current_prompt: PromptWrapper,
         meta_prompt: str,
         annotated_results: str,
         task: Task,
         other_attempts: list | None = None,
-    ) -> PromptConfig:
+    ) -> PromptWrapper:
         """Generates an improved prompt using the meta-prompt."""
         chain = self.model.with_structured_output(OptimizedPromptOutput)
         inputs = meta_prompt.format(
@@ -796,7 +853,7 @@ class PromptOptimizer:
             ),
         )
         prompt_output: OptimizedPromptOutput = await chain.ainvoke(inputs)
-        candidate = PromptConfig.from_prior(
+        candidate = PromptWrapper.from_prior(
             current_prompt, prompt_output.improved_prompt
         )
 

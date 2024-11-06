@@ -2,7 +2,7 @@ import functools
 import logging
 
 from langchain_openai import ChatOpenAI
-from promptim.trainer import PromptConfig, Task
+from promptim.trainer import PromptWrapper, Task
 from pydantic import BaseModel, Field
 
 
@@ -95,7 +95,7 @@ ticket_classification_task = Task(
     name="Ticket Classification",
     description="A task to classify customer support tickets",
     dataset="ticket-classification-optim",
-    initial_prompt=PromptConfig(
+    initial_prompt=PromptWrapper(
         identifier="langchain-ai/ticket-classifier-example:376ab5e4",
         which=1,
     ),

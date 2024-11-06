@@ -113,9 +113,6 @@ SystemType = Callable[[ChatPromptTemplate, dict], dict]
 """Takes the current prompt and the example inputs and returns the results."""
 
 
-# TODO: split user facing from the loadable one
-
-
 @dataclass(kw_only=True)
 class PromptConfig:
     identifier: str | None = None

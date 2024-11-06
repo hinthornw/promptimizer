@@ -18,13 +18,12 @@ from langsmith.evaluation._arunner import ExperimentResultRow
 from langsmith.schemas import Example, Run
 from pydantic import BaseModel, Field
 from rich import print as richprint
-from rich.console import Console, Group
+from rich.console import Console
 from rich.panel import Panel
-from rich.progress import Progress, BarColumn, TextColumn
-from rich.text import Text
-from rich.live import Live
+from rich.progress import Progress
 from rich.table import Table
 from langchain_core.load import dumps
+from langsmith.utils import LangSmithConflictError
 
 
 def ltq():
@@ -213,13 +212,16 @@ class PromptConfig:
     ) -> str:
         prompt = self.load(client)
         identifier = identifier or self.identifier.rsplit(":", maxsplit=1)[0]
-        if not include_model_info or not self._postlude:
-            new_id = client.push_prompt(identifier, object=prompt)
-        else:
-            seq = RunnableSequence(prompt, self._postlude)
-            manifest = json.loads(dumps(seq))
-            manifest["id"] = ("langsmith", "playground", "PromptPlayground")
-            new_id = client.push_prompt(identifier, object=manifest)
+        try:
+            if not include_model_info or not self._postlude:
+                new_id = client.push_prompt(identifier, object=prompt)
+            else:
+                seq = RunnableSequence(prompt, self._postlude)
+                manifest = json.loads(dumps(seq))
+                manifest["id"] = ("langsmith", "playground", "PromptPlayground")
+                new_id = client.push_prompt(identifier, object=manifest)
+        except LangSmithConflictError:
+            return identifier
 
         return ":".join(
             new_id
@@ -309,7 +311,7 @@ class PromptOptimizer:
         train_size: Optional[int] = None,
         batch_size: int = 40,
         epochs: int = 1,
-        use_annotation_queue: str | None = None,
+        annotation_queue: str | None = None,
         debug: bool = False,
         commit_prompts: bool = False,
     ) -> tuple[PromptConfig, float]:
@@ -405,12 +407,28 @@ class PromptOptimizer:
                 if baseline_scores
                 else None
             )
-            baseline_scores_output = "[cyan]Baseline scores:\n"
+
+            table = Table(
+                title="Baseline Scores (Dev Set)",
+                show_header=True,
+                header_style="bold magenta",
+            )
+            table.add_column("Metric", style="cyan", no_wrap=True)
+            table.add_column("Score", justify="right", style="green")
+
             for metric, score in baseline_scores.items():
-                baseline_scores_output += f"  {metric}: {score:.4f}\n"
-            baseline_scores_output += f"  Average over dev set: {best_score:.4f}"
-            baseline_scores_output += "\n\nBeginning optimization."
-            progress.console.print(baseline_scores_output)
+                table.add_row(metric, f"{score:.4f}")
+
+            table.add_row("Average", f"{best_score:.4f}", style="bold")
+
+            progress.console.print(
+                Panel(
+                    table,
+                    title="[bold]Initial Prompt Evaluation[/bold]",
+                    border_style="cyan",
+                )
+            )
+            progress.console.print("\n[bold cyan]Beginning optimization.[/bold cyan]")
             progress.console.print()
 
             # Step 2: Train
@@ -459,10 +477,10 @@ class PromptOptimizer:
                             system_config=system_config,
                         )
                     next_action = "continue"
-                    if use_annotation_queue:
+                    if annotation_queue:
                         results, next_action = await self._wait_for_annotation_queue(
                             results,
-                            use_annotation_queue,
+                            annotation_queue,
                             task,
                             progress,
                         )
@@ -486,6 +504,8 @@ class PromptOptimizer:
                         results=results,
                     )
                     current_prompt = improved
+                    if commit_prompts:
+                        current_prompt.push_prompt(client=self.client)
 
                     progress.update(
                         batch_task,
@@ -575,19 +595,19 @@ class PromptOptimizer:
         # Print final report
         initial_scores = await self.calculate_scores(initial_test_results)
         final_scores = await self.calculate_scores(final_test_results)
-        
-        table = Table(title="Optimization Results", show_header=True, header_style="bold magenta")
+
+        table = Table(
+            title="Optimization Results", show_header=True, header_style="bold magenta"
+        )
         table.add_column("Metric", style="cyan", no_wrap=True)
         table.add_column("Initial Score", justify="right", style="green")
         table.add_column("Final Score", justify="right", style="green")
-        
+
         for metric in initial_scores.keys():
             table.add_row(
-                metric,
-                f"{initial_scores[metric]:.4f}",
-                f"{final_scores[metric]:.4f}"
+                metric, f"{initial_scores[metric]:.4f}", f"{final_scores[metric]:.4f}"
             )
-        
+
         richprint(Panel(table, title="Final Report", border_style="bold"))
 
         # Print prompt diff
@@ -621,13 +641,16 @@ class PromptOptimizer:
                 name=queue_name,
                 description=f"Annotation queue used for prompt optimization on {task.name}",
             )
-        runs = [r["run"].id for r in results]
-        for _ in range(10):
+        runs = [str(r["run"].id) for r in results]
+        N = 10
+        for i in range(N):
             try:
-                self.client.add_runs_to_annotation_queue(q.id, run_ids=runs)
+                self.client.add_runs_to_annotation_queue(str(q.id), run_ids=runs)
                 break
-            except ValueError:
-                time.sleep(1)
+            except Exception:
+                if i == N - 1:
+                    raise
+                time.sleep(i)
 
         # Now, log instrutions and await user input in the terminal.
         # User input can either continue or break the loop

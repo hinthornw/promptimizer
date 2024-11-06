@@ -1,4 +1,5 @@
 import copy
+import json
 import random
 from collections import defaultdict
 from dataclasses import dataclass, field
@@ -11,17 +12,19 @@ import langsmith as ls
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.prompts.structured import StructuredPrompt
-from langchain_core.runnables import RunnableBinding, RunnableSequence
+from langchain_core.runnables import RunnableSequence, RunnableBinding
 from langsmith.evaluation import _arunner, _runner
 from langsmith.evaluation._arunner import ExperimentResultRow
 from langsmith.schemas import Example, Run
 from pydantic import BaseModel, Field
 from rich import print as richprint
-from rich.console import Console
+from rich.console import Console, Group
 from rich.panel import Panel
-from rich.progress import Progress
+from rich.progress import Progress, BarColumn, TextColumn
 from rich.text import Text
+from rich.live import Live
+from rich.table import Table
+from langchain_core.load import dumps
 
 
 def ltq():
@@ -123,7 +126,7 @@ class PromptConfig:
     which: int = 0
     """Which message to optimize."""
     _cached: ChatPromptTemplate | None = None
-    _postlude: RunnableSequence | None = None
+    _postlude: RunnableBinding | BaseChatModel | None = None
 
     def __post_init__(self):
         if self.identifier and self.prompt_str:
@@ -141,32 +144,14 @@ class PromptConfig:
                 )
             else:
                 client = client or ls.Client()
-                postlude = None
                 prompt = client.pull_prompt(self.identifier, include_model=True)
                 if isinstance(prompt, RunnableSequence):
-                    # I hate this
-                    prompt, bound_llm = prompt.first, prompt.steps[1]
-                    if isinstance(prompt, StructuredPrompt) and isinstance(
-                        bound_llm, RunnableBinding
-                    ):
-                        seq: RunnableSequence = prompt | bound_llm.bound
-                        rebound_llm = seq.steps[1]
-                        parser = seq.steps[2]
-                        postlude = RunnableSequence(
-                            rebound_llm.bind(
-                                **{**bound_llm.kwargs, **(self.model_config or {})}
-                            ),
-                            parser,
-                        )
-                    else:
-                        postlude = bound_llm
+                    prompt, postlude = prompt.first, prompt.steps[1]
                 else:
                     # Default to gpt-4o-mini
                     postlude = init_chat_model(
                         **(self.model_config or DEFAULT_PROMPT_MODEL_CONFIG)
                     )
-                    if isinstance(prompt, StructuredPrompt):
-                        postlude = RunnableSequence(*(prompt | postlude).steps[1:])
                 self._cached = prompt
                 self._postlude = postlude
         return self._cached
@@ -217,6 +202,33 @@ class PromptConfig:
             which=prior.which,
             _cached=copied,
             _postlude=prior._postlude,
+        )
+
+    def push_prompt(
+        self,
+        *,
+        identifier: Optional[str] = None,
+        include_model_info: bool = True,
+        client: ls.Client,
+    ) -> str:
+        prompt = self.load(client)
+        identifier = identifier or self.identifier.rsplit(":", maxsplit=1)[0]
+        if not include_model_info or not self._postlude:
+            new_id = client.push_prompt(identifier, object=prompt)
+        else:
+            seq = RunnableSequence(prompt, self._postlude)
+            manifest = json.loads(dumps(seq))
+            manifest["id"] = ("langsmith", "playground", "PromptPlayground")
+            new_id = client.push_prompt(identifier, object=manifest)
+
+        return ":".join(
+            new_id
+            # Remove the https:// prefix
+            .split("/prompts/", maxsplit=1)[1]
+            # Rm query string
+            .split("?")[0]
+            # Split the repo from the commit hash
+            .rsplit("/", maxsplit=1)
         )
 
 
@@ -299,6 +311,7 @@ class PromptOptimizer:
         epochs: int = 1,
         use_annotation_queue: str | None = None,
         debug: bool = False,
+        commit_prompts: bool = False,
     ) -> tuple[PromptConfig, float]:
         """Optimizes a prompt for a specific task through multiple iterations."""
         task.initial_prompt.load(self.client)  # check
@@ -310,7 +323,7 @@ class PromptOptimizer:
         richprint(
             Panel.fit(
                 f"[bold cyan]Original Prompt:[/bold cyan]\n\n{task.initial_prompt.get_prompt_str_in_context(self.client)}",
-                title="Starting Prompt",
+                title="Initial Prompt to optimize:",
                 border_style="bold",
             )
         )
@@ -318,11 +331,15 @@ class PromptOptimizer:
             split
             for split in self.client.list_dataset_splits(dataset_name=task.dataset)
         }
+        whole_banana = (
+            "train" not in splits or "dev" not in splits or "test" not in splits
+        )
         with Progress() as progress:
             ptsk = progress.add_task("[cyan]Loading data...", total=1)
-            if "train" not in splits or "dev" not in splits or "test" not in splits:
+            if whole_banana:
                 progress.console.print(
-                    "[yellow]Warning: train/dev/test splits not found. Using all examples for train, dev, and test sets.[/yellow]"
+                    "[yellow]No splits found! "
+                    "We'll train on the test set, but remember: a split dataset is appealing![/yellow]"
                 )
                 all_examples = list(
                     self.client.list_examples(dataset_name=task.dataset)
@@ -354,47 +371,102 @@ class PromptOptimizer:
                         dataset_name=task.dataset, splits=["test"]
                     )
                 )
+            train_examples, dev_examples, test_examples = self._validate_split_examples(
+                train_examples, dev_examples, test_examples, progress.console
+            )
             progress.update(ptsk, advance=1)
-        with Progress() as progress:
-            main_task = progress.add_task("[cyan]Optimizing prompt...", total=100)
 
-            # Step 1: Get baseline scores
-            progress.update(
-                main_task, advance=10, description="[cyan]Getting baseline scores..."
-            )
-            if task.baseline_experiment:
-                baseline_scores = await self._fetch_baseline_metrics(
-                    task.baseline_experiment
-                )
-            else:
-                baseline_experiment_results = await self._evaluate_prompt(
-                    current_prompt,
-                    task,
-                    dev_examples,
-                    debug=debug,
-                    system_config=system_config,
-                )
-                baseline_scores = await self.calculate_scores(
-                    baseline_experiment_results
-                )
-            best_score = (
-                sum(baseline_scores.values()) / len(baseline_scores)
-                if baseline_scores
-                else None
-            )
-            baseline_scores_output = "[cyan]Baseline scores:\n"
-            for metric, score in baseline_scores.items():
-                baseline_scores_output += f"  {metric}: {score:.4f}\n"
-            baseline_scores_output += f"Overall baseline score: {best_score:.4f}"
-            progress.console.print(baseline_scores_output)
-            progress.console.print()
+        console = Console()
+        main_progress = Progress(
+            TextColumn("[progress.description]{task.description}"),
+            BarColumn(),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            console=console,
+        )
+        main_task = main_progress.add_task("[cyan]Optimizing prompt...", total=100)
+        epoch_task = main_progress.add_task("[green]Training Epoch", total=epochs)
 
-            # Step 2: Train
-            progress.update(
-                main_task, advance=10, description="[cyan]Training prompt..."
+        # Step 1: Get baseline scores
+        main_progress.update(
+            main_task,
+            advance=10,
+            description="[cyan]Getting baseline dev set scores...",
+        )
+        if task.baseline_experiment:
+            baseline_scores = await self._fetch_baseline_metrics(
+                task.baseline_experiment
             )
+        else:
+            baseline_experiment_results = await self._evaluate_prompt(
+                current_prompt,
+                task,
+                dev_examples,
+                debug=debug,
+                system_config=system_config,
+            )
+            baseline_scores = await self.calculate_scores(baseline_experiment_results)
+        best_score = (
+            sum(baseline_scores.values()) / len(baseline_scores)
+            if baseline_scores
+            else None
+        )
+        baseline_scores_output = "[cyan]Scores for baseline prompt:\n"
+        for metric, score in baseline_scores.items():
+            baseline_scores_output += f"  {metric}: {score:.4f}\n"
+        baseline_scores_output += f"  Average of baseline scores: {best_score:.4f}"
+        console.print(baseline_scores_output)
+        console.print()
 
-            epoch_task = progress.add_task("[green]Epochs", total=epochs)
+        # Step 2: Train
+        main_progress.update(
+            main_task,
+            advance=10,
+            description="[cyan]Beginning prompt optimization...",
+        )
+
+        def create_table(known_metrics: set[str]) -> Table:
+            table = Table(title="Training Progress:")
+            table.add_column("Epoch", justify="right")
+            table.add_column("Batch", justify="right")
+            table.add_column("Prompt ID", justify="left")
+            table.add_column("Avg Score", justify="right")
+            for metric in sorted(known_metrics):
+                table.add_column(metric, justify="right")
+            return table
+
+        def format_row(
+            epoch: int,
+            batch: int,
+            prompt_id: str,
+            avg_score: float,
+            scores: dict[str, float],
+            epochs: int,
+            batches: int,
+            known_metrics: set[str],
+        ) -> list[str]:
+            row = [
+                f"{epoch+1}/{epochs}",
+                f"{batch+1}/{batches}",
+                str(prompt_id),
+                f"{avg_score:.4f}",
+            ]
+            for metric in sorted(known_metrics):
+                score = scores.get(metric)
+                if score is None:
+                    row.append("-")
+                else:
+                    row.append(f"{score:.4f}")
+            return row
+
+        recent_batches = []
+        known_metrics: set[str] = set()
+        table = create_table(known_metrics)
+
+        with Live(
+            Group(table, Panel(main_progress, title="Progress", border_style="green")),
+            console=console,
+            refresh_per_second=4,
+        ) as live:
             for epoch in range(epochs):
                 self.rng.shuffle(train_examples)
                 if train_size:
@@ -405,39 +477,106 @@ class PromptOptimizer:
                     for i in range(0, len(train_examples), batch_size)
                 ]
 
-                batch_task = progress.add_task(
-                    f"[yellow]Epoch {epoch+1} batches", total=len(batches)
+                batch_task = main_progress.add_task(
+                    f"[yellow]Epoch {epoch+1} minibatches", total=len(batches)
                 )
-                all_train_scores = []
                 experiment_name = None
-                for batch in batches:
-                    results = await self._evaluate_prompt(
-                        current_prompt,
-                        task,
-                        batch,
-                        debug=debug,
-                        experiment_name=experiment_name,
-                        system_config=system_config,
-                    )
+                for bix, batch in enumerate(batches):
+                    if (
+                        bix == 0
+                        and epoch == 0
+                        and whole_banana
+                        and baseline_experiment_results
+                    ):
+                        bindices = {e.id for e in batch}
+                        results = [
+                            r
+                            for r in baseline_experiment_results
+                            if r["example"].id in bindices
+                        ]
+                    else:
+                        results = await self._evaluate_prompt(
+                            current_prompt,
+                            task,
+                            batch,
+                            debug=debug,
+                            experiment_name=experiment_name,
+                            system_config=system_config,
+                        )
                     next_action = "continue"
                     if use_annotation_queue:
                         results, next_action = await self._wait_for_annotation_queue(
                             results,
                             use_annotation_queue,
                             task,
-                            progress,
+                            main_progress,
                         )
                     train_scores = await self.calculate_scores(results)
+
+                    # Check for new metrics
+                    new_metrics = set(train_scores.keys()) - known_metrics
+                    if new_metrics:
+                        known_metrics.update(new_metrics)
+                        table = create_table(known_metrics)
+                        # Re-add existing data
+                        for e, b, pid, avg, scores in recent_batches:
+                            table.add_row(
+                                *format_row(
+                                    e,
+                                    b,
+                                    pid,
+                                    avg,
+                                    scores,
+                                    epochs,
+                                    len(batches),
+                                    known_metrics,
+                                )
+                            )
+
                     train_score = (
                         sum(train_scores.values()) / len(train_scores)
                         if train_scores
                         else None
                     )
-                    all_train_scores.append(train_score)
-                    progress.console.print(
-                        f"Batch train score: {train_score:.4f}", end="\n"
+
+                    # Keep only the last 5 batches
+                    if len(recent_batches) >= 5:
+                        recent_batches.pop(0)
+                    recent_batches.append(
+                        (
+                            epoch,
+                            bix,
+                            current_prompt.identifier,
+                            train_score,
+                            train_scores,
+                        )
                     )
-                    progress.console.print()
+
+                    # Update the table
+                    table.rows.clear()
+                    for e, b, pid, avg, scores in recent_batches:
+                        table.add_row(
+                            *format_row(
+                                e,
+                                b,
+                                pid,
+                                avg,
+                                scores,
+                                epochs,
+                                len(batches),
+                                known_metrics,
+                            )
+                        )
+
+                    live.update(
+                        Group(
+                            table,
+                            Panel(
+                                main_progress, title="Progress", border_style="green"
+                            ),
+                        )
+                    )
+
                     improved = await self.apply_metaprompt(
                         current_prompt=current_prompt,
                         other_attempts=other_attempts,
@@ -445,22 +584,15 @@ class PromptOptimizer:
                         task=task,
                         results=results,
                     )
+                    improved.identifier = improved.push_prompt(client=self.client)
                     current_prompt = improved
-                    progress.update(batch_task, advance=1)
+                    main_progress.update(batch_task, advance=1)
                     if next_action != "continue":
                         break
 
-                console = Console()
-
-                train_scores_panel = Panel(
-                    Text(", ".join(f"{score:.4f}" for score in all_train_scores)),
-                    title="Train Scores",
-                    expand=False,
-                    border_style="bold",
+                main_progress.update(
+                    main_task, description="[cyan]Evaluating on dev set..."
                 )
-                console.print(train_scores_panel)
-                # Evaluate on dev set after each epoch
-                progress.update(main_task, description="[cyan]Evaluating on dev set...")
                 dev_results = await self._evaluate_prompt(
                     current_prompt,
                     task,
@@ -472,27 +604,25 @@ class PromptOptimizer:
                 dev_score = (
                     sum(dev_scores.values()) / len(dev_scores) if dev_scores else None
                 )
-
                 if dev_score is not None and dev_score > best_score:
                     if best_prompt not in other_attempts:
                         other_attempts.append(best_prompt)
                     best_score = dev_score
                     best_prompt = current_prompt
-                    progress.console.print(
+                    main_progress.print(
                         f"New best score: {best_score:.4f} (surpassed previous best)"
                     )
-                    progress.console.print("Average of:")
+                    main_progress.print("Average of:")
                     for metric, score in dev_scores.items():
-                        progress.console.print(f"  {metric}: {score:.4f}")
+                        main_progress.print(f"  {metric}: {score:.4f}")
                 else:
                     other_attempts.append(current_prompt)
                     current_prompt = best_prompt
-                    progress.console.print(
+                    main_progress.print(
                         f"Score {dev_score:.4f} did not surpass best score {best_score:.4f}"
                     )
-                progress.console.print()
 
-                progress.console.print(
+                main_progress.print(
                     Panel(
                         f"[bold]Epoch {epoch+1}[/bold]\n"
                         f"Dev score: [cyan]{dev_score:.4f}[/cyan]\n"
@@ -502,11 +632,11 @@ class PromptOptimizer:
                         border_style="bold",
                     )
                 )
-                progress.console.print()
-                progress.update(epoch_task, advance=1)
+                main_progress.print()
+                main_progress.update(epoch_task, advance=1)
 
             # Step 3: Test
-            progress.update(
+            main_progress.update(
                 main_task, advance=10, description="[cyan]Running final tests..."
             )
             del train_examples
@@ -526,7 +656,7 @@ class PromptOptimizer:
                 debug=debug,
                 system_config=system_config,
             )
-            progress.update(
+            main_progress.update(
                 main_task, advance=10, description="[cyan]Optimization complete!"
             )
         # Print final report
@@ -768,6 +898,33 @@ class PromptOptimizer:
             col for col in test_results.columns if col.startswith("feedback.")
         ]
         return {col: test_results[col].mean() for col in metric_cols}
+
+    @staticmethod
+    def _validate_split_examples(
+        train_examples: list[Example],
+        dev_examples: list[Example],
+        test_examples: list[Example],
+        console: Console,
+    ) -> tuple[list[Example], list[Example], list[Example]]:
+        """Validate and potentially adjust the split examples."""
+        if not train_examples:
+            raise ValueError(
+                "Train examples list is empty. Please provide training data."
+            )
+
+        if not dev_examples:
+            console.log(
+                "[yellow]Warning: Dev examples list is empty. Using train examples for dev set.[/yellow]"
+            )
+            dev_examples = train_examples
+
+        if not test_examples:
+            console.log(
+                "[yellow]Warning: Test examples list is empty. Using dev examples for test set.[/yellow]"
+            )
+            test_examples = dev_examples
+
+        return train_examples, dev_examples, test_examples
 
 
 def _colorize_diff(diff):

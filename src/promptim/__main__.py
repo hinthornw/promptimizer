@@ -556,7 +556,7 @@ def create_task(
             (
                 json_comment(example.outputs)
                 if example.outputs is not None
-                else "    # None"
+                else "    # None - this example lacks expected outputs"
             )
             if example
             else None

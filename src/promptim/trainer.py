@@ -260,7 +260,12 @@ class PromptWrapper(PromptConfig):
             if not include_model_info or not self._postlude:
                 new_id = client.push_prompt(identifier, object=prompt)
             else:
-                seq = RunnableSequence(prompt, self._postlude)
+                second = (
+                    self._postlude.first
+                    if isinstance(self._postlude, RunnableSequence)
+                    else self._postlude
+                )
+                seq = RunnableSequence(prompt, second)
                 return self._push_seq(client, seq, identifier)
 
         except LangSmithConflictError:

@@ -13,6 +13,7 @@ from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
 from langchain_core.load import dumps
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.prompts.structured import StructuredPrompt
 from langchain_core.runnables import RunnableBinding, RunnableSequence
 from langsmith.evaluation import _arunner, _runner
 from langsmith.evaluation._arunner import ExperimentResultRow
@@ -169,18 +170,31 @@ class PromptWrapper(PromptConfig):
                 )
             else:
                 client = client or ls.Client()
+                postlude = None
                 prompt = client.pull_prompt(self.identifier, include_model=True)
                 if isinstance(prompt, RunnableSequence):
-                    prompt, postlude = prompt.first, prompt.steps[1]
-                    if self.model_config:
-                        postlude = init_chat_model(
-                            **(self.model_config or DEFAULT_PROMPT_MODEL_CONFIG)
+                    prompt, bound_llm = prompt.first, prompt.steps[1]
+                    if isinstance(prompt, StructuredPrompt) and isinstance(
+                        bound_llm, RunnableBinding
+                    ):
+                        seq: RunnableSequence = prompt | bound_llm.bound
+                        rebound_llm = seq.steps[1]
+                        parser = seq.steps[2]
+                        postlude = RunnableSequence(
+                            rebound_llm.bind(
+                                **{**bound_llm.kwargs, **(self.model_config or {})}
+                            ),
+                            parser,
                         )
+                    else:
+                        postlude = bound_llm
                 else:
                     # Default to gpt-4o-mini
                     postlude = init_chat_model(
                         **(self.model_config or DEFAULT_PROMPT_MODEL_CONFIG)
                     )
+                    if isinstance(prompt, StructuredPrompt):
+                        postlude = RunnableSequence(*(prompt | postlude).steps[1:])
                 self._cached = prompt
                 self._postlude = postlude
         return self._cached

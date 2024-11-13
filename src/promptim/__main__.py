@@ -588,10 +588,7 @@ def create_task(
                 "max_tokens_to_sample": 8192,
             }
         },
-        "initial_prompt": {
-            "identifier": identifier,
-            "model_config": {"model": "claude-3-5-haiku-20241022"},
-        },
+        "initial_prompt": {"identifier": identifier},
     }
     config[
         "$schema"

@@ -104,6 +104,16 @@ async def run(
     return prompt, score
 
 
+def load_environment():
+    """Load environment variables from .env file if it exists in current directory."""
+    env_path = os.path.join(os.getcwd(), ".env")
+    if os.path.exists(env_path):
+        from dotenv import load_dotenv
+
+        load_dotenv(env_path)
+        click.echo(f"Loaded environment variables from {env_path}")
+
+
 @click.group()
 @click.version_option(version="1")
 def cli():
@@ -119,7 +129,8 @@ def cli():
     Example:
         promptim train --task ./my-task/config.json
     """
-    pass
+    # Load environment variables at the start of CLI execution
+    load_environment()
 
 
 @cli.command()
@@ -213,6 +224,7 @@ def _try_get_prompt(client: Client, prompt: str | None, yes: bool):
     from langchain_core.prompts import ChatPromptTemplate
     from langchain_core.prompts.structured import StructuredPrompt
     from langchain_core.runnables import RunnableBinding, RunnableSequence
+
     from promptim.trainer import PromptWrapper
 
     expected_run_outputs = 'predicted: AIMessage = run.outputs["output"]'
@@ -594,9 +606,9 @@ def create_task(
         },
         "initial_prompt": {"identifier": identifier},
     }
-    config[
-        "$schema"
-    ] = "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+    config["$schema"] = (
+        "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+    )
     with open(os.path.join(path, "config.json"), "w") as f:
         json.dump(config, f, indent=2)
 
@@ -785,9 +797,9 @@ def create_example_task(path: str, name: str):
         },
     }
 
-    config[
-        "$schema"
-    ] = "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+    config["$schema"] = (
+        "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+    )
     with open(os.path.join(path, "config.json"), "w") as f:
         json.dump(config, f, indent=2)
 

@@ -105,13 +105,27 @@ async def run(
 
 
 def load_environment():
-    """Load environment variables from .env file if it exists in current directory."""
-    env_path = os.path.join(os.getcwd(), ".env")
-    if os.path.exists(env_path):
-        from dotenv import load_dotenv
+    """Load environment variables from environment files.
 
-        load_dotenv(env_path)
-        click.echo(f"Loaded environment variables from {env_path}")
+    Attempts to load from .env file if it exists, using python-dotenv.
+    Only attempts to import dotenv if a file is found.
+    """
+    # Check common locations first before importing anything
+    for dirname in [os.getcwd()] + [os.path.dirname(p) for p in sys.path]:
+        check_path = os.path.join(dirname, ".env")
+        if os.path.isfile(check_path):
+            try:
+                from dotenv import load_dotenv
+            except ImportError:
+                click.secho(
+                    "python-dotenv package not installed. Environment variables will not be loaded from file.",
+                    fg="yellow",
+                )
+                return
+
+            load_dotenv(check_path)
+            click.echo(f"Loaded environment variables from {check_path}")
+            return
 
 
 @click.group()
@@ -129,7 +143,6 @@ def cli():
     Example:
         promptim train --task ./my-task/config.json
     """
-    # Load environment variables at the start of CLI execution
     load_environment()
 
 
@@ -259,8 +272,8 @@ def _try_get_prompt(client: Client, prompt: str | None, yes: bool):
         raise ValueError(f"Unrecognized prompt format: {chain}")
     if isinstance(prompt_obj, StructuredPrompt):
         expected_run_outputs = "predicted: Output = run.outputs"
-    elif isinstance(prompt_obj, ChatPromptTemplate):
-        pass
+    elif isinstance(chain, RunnableSequence):
+        expected_run_outputs = 'predicted: AIMessage = run.outputs["output"]'
     elif (
         isinstance(chain, RunnableSequence)
         and isinstance(chain.steps[1], RunnableBinding)

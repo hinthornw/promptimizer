@@ -13,6 +13,9 @@ from langsmith.schemas import Example
 from pydantic import BaseModel, Field
 from promptim import types as pm_types
 from promptim import _utils as pm_utils
+from promptim.optimizers.base import BaseOptimizer
+from promptim.optimizers.metaprompt import MetaPromptOptimizer
+from promptim.optimizers.fewshot import FewShotInsertionAlgorithm
 from rich import print as richprint
 from rich.console import Console
 from rich.panel import Panel
@@ -45,27 +48,45 @@ class OptimizedPromptOutput(BaseModel):
     improved_prompt: str = Field(description="The improved prompt text")
 
 
-class PromptOptimizer:
-    """A framework for optimizing meta-prompts through multi-task evaluation."""
+class PromptTrainer:
+    """A framework for optimizing prompts through multi-task evaluation."""
 
     def __init__(
         self,
-        model: BaseChatModel,
-        meta_prompt: Optional[str] = None,
+        optimizer: BaseOptimizer,
+        client: Optional[ls.Client] = None,
         seed: int = 42,
     ):
-        self.model = model
-        self.client = ls.Client()
-        self.meta_prompt = meta_prompt or pm_types.DEFAULT_METAPROMPT
+        """Initialize the trainer with a specific optimization algorithm.
+
+        Args:
+            optimizer: The optimization algorithm to use for improving prompts
+            client: Optional LangSmith client. If not provided, a new one will be created
+            seed: Random seed for reproducibility
+        """
+        self.optimizer = optimizer
+        self.client = client or ls.Client()
         random.seed(seed)
         self.rng = random.Random(seed)
 
     @classmethod
     def from_config(cls, config: dict):
+        """Create a PromptTrainer from a configuration dictionary.
+
+        Args:
+            config: Either a MetaPromptOptimizerConfig or FewShotOptimizerConfig
+        """
         cp = config.copy()
-        model_config = cp.pop("model", pm_types.DEFAULT_OPTIMIZER_MODEL_CONFIG)
-        model = init_chat_model(**model_config)
-        return cls(model, **cp)
+        kind = cp.get("kind", "metaprompt")
+
+        if kind == "metaprompt":
+            optimizer = MetaPromptOptimizer.from_config(cp)
+        elif kind == "fewshot":
+            optimizer = FewShotInsertionAlgorithm.from_config(cp)
+        else:
+            raise ValueError(f"Unknown optimizer kind: {kind}")
+
+        return cls(optimizer=optimizer)
 
     async def optimize_prompt(
         self,
@@ -232,6 +253,7 @@ class PromptOptimizer:
             )
 
             for epoch in range(epochs):
+                self.optimizer.on_epoch_start(epoch, task)
                 self.rng.shuffle(train_examples)
                 if train_size:
                     train_examples = train_examples[:train_size]
@@ -289,12 +311,11 @@ class PromptOptimizer:
                         batch_task,
                         description=f"[yellow]Epoch {epoch+1} (Avg training score: {avg_score:.4f})",
                     )
-                    improved = await self.apply_metaprompt(
+                    improved = await self.optimizer.improve_prompt(
                         current_prompt=current_prompt,
-                        other_attempts=other_attempts,
-                        meta_prompt=self.meta_prompt,
-                        task=task,
                         results=results,
+                        task=task,
+                        other_attempts=other_attempts,
                     )
                     current_prompt = improved
                     if commit_prompts:
@@ -404,8 +425,7 @@ class PromptOptimizer:
 
         richprint(Panel(table, title="Final Report", border_style="bold"))
 
-        # Print prompt diff
-        pm_types.RunnableBinding_print_rich_diff(
+        pm_utils.print_rich_diff(
             initial_prompt.get_prompt_str_in_context(),
             best_prompt.get_prompt_str_in_context(),
             title="Final Prompt Updates",
@@ -558,73 +578,6 @@ class PromptOptimizer:
             for key, values in scores.items()
         }
 
-    async def apply_metaprompt(
-        self,
-        current_prompt: pm_types.PromptWrapper,
-        meta_prompt: str,
-        task: pm_types.Task,
-        results: list[ExperimentResultRow],
-        other_attempts: list | None = None,
-    ) -> pm_types.PromptWrapper:
-        annotated_results = self._format_results(results)
-        return await self._generate_improved_prompt(
-            current_prompt,
-            meta_prompt,
-            annotated_results,
-            task,
-            other_attempts=other_attempts,
-        )
-
-    def _format_results(self, results: list[ExperimentResultRow]) -> str:
-        """Formats evaluation results for inclusion in the meta-prompt."""
-        formatted = []
-        i = 0
-        for result in results:
-            formatted.append(f"Example {i+1}:")
-            formatted.append(f'Input: {result["run"].inputs}')
-            formatted.append(f'Output: {result["run"].outputs}')
-            formatted.append("Evaluations:")
-            for eval in result["evaluation_results"]["results"]:
-                formatted.append(f"- {eval.key}: {eval.score}")
-                if eval.comment:
-                    formatted.append(f"  Comment: {eval.comment}")
-            formatted.append("")
-            i += 1
-        return "\n".join(formatted)
-
-    async def _generate_improved_prompt(
-        self,
-        current_prompt: pm_types.PromptWrapper,
-        meta_prompt: str,
-        annotated_results: str,
-        task: pm_types.Task,
-        other_attempts: list | None = None,
-    ) -> pm_types.PromptWrapper:
-        """Generates an improved prompt using the meta-prompt."""
-        chain = self.model.with_structured_output(OptimizedPromptOutput)
-        inputs = meta_prompt.format(
-            current_prompt=current_prompt.get_prompt_str_in_context(self.client),
-            annotated_results=annotated_results,
-            task_description=task.describe(),
-            other_attempts=(
-                "\n\n---".join([p.get_prompt_str() for p in other_attempts])
-                if other_attempts
-                else "N/A"
-            ),
-        )
-        prompt_output: OptimizedPromptOutput = await chain.ainvoke(inputs)
-        candidate = pm_types.PromptWrapper.from_prior(
-            current_prompt, prompt_output.improved_prompt
-        )
-
-        pm_utils.print_rich_diff(
-            current_prompt.get_prompt_str_in_context(self.client),
-            candidate.get_prompt_str_in_context(self.client),
-            "Updated Prompt",
-        )
-
-        return candidate
-
     async def _fetch_baseline_metrics(self, experiment_id: UUID) -> dict:
         """Fetches metrics for a baseline experiment."""
         # Implementation to fetch metrics from LangSmith using the experiment ID
@@ -660,3 +613,46 @@ class PromptOptimizer:
             test_examples = dev_examples
 
         return train_examples, dev_examples, test_examples
+
+
+class PromptOptimizer(PromptTrainer):
+    """Legacy wrapper for backward compatibility that uses the MetaPromptOptimizer."""
+
+    def __init__(
+        self,
+        model: BaseChatModel,
+        meta_prompt: Optional[str] = None,
+        seed: int = 42,
+    ):
+        optimizer = MetaPromptOptimizer(
+            model=model,
+            meta_prompt=meta_prompt or pm_types.DEFAULT_METAPROMPT,
+        )
+        super().__init__(optimizer=optimizer, seed=seed)
+        self.model = model  # For backward compatibility
+        self.meta_prompt = meta_prompt or pm_types.DEFAULT_METAPROMPT
+
+    @classmethod
+    def from_config(cls, config: dict):
+        """Legacy config method that assumes metaprompt optimizer."""
+        cp = config.copy()
+        model_config = cp.pop("model", pm_types.DEFAULT_OPTIMIZER_MODEL_CONFIG)
+        model = init_chat_model(**model_config)
+        meta_prompt = cp.pop("meta_prompt", None)
+        return cls(model=model, meta_prompt=meta_prompt, **cp)
+
+    async def apply_metaprompt(
+        self,
+        current_prompt: pm_types.PromptWrapper,
+        meta_prompt: str,
+        task: pm_types.Task,
+        results: list[ExperimentResultRow],
+        other_attempts: list | None = None,
+    ) -> pm_types.PromptWrapper:
+        """Legacy method for backward compatibility."""
+        return await self.optimizer.improve_prompt(
+            current_prompt=current_prompt,
+            results=results,
+            task=task,
+            other_attempts=other_attempts or [],
+        )

@@ -54,7 +54,7 @@ The enhanced prompt for optimizing task-specific prompts
 </improved_optimization_prompt>"""
 
 
-class MetapromptSystem:
+class MetaPromptSystem:
     """System for running the metaprompt optimization task."""
 
     def __init__(self, task_map: dict[str, Task], meta_prompt: PromptWrapper):
@@ -166,7 +166,7 @@ def metaprompt_evaluator(run, example):
 
 prompt_config = PromptWrapper(prompt_str=DEFAULT_METAPROMPT)
 metaprompt_task = Task(
-    name="Metaprompt Optimizer",
+    name="MetaPrompt Optimizer",
     description="A meta-optimization task that aims to improve the prompt used for optimizing task-specific prompts. This task evaluates and enhances the effectiveness of the prompt optimization process itself, leading to better performance across various language tasks.",
     dataset="metaprompt-optim",
     initial_prompt=prompt_config,
@@ -174,7 +174,7 @@ metaprompt_task = Task(
     evaluator_descriptions={
         "metaprompt_improvement": "Checks if the new prompt leads to improved scores. 1 if better, 0.5 if same, 0 if worse."
     },
-    system=MetapromptSystem(
+    system=MetaPromptSystem(
         {
             "scone": scone_task,
             "tweet": tweet_task,

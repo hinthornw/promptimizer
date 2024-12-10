@@ -1,7 +1,7 @@
 import copy
 import json
 from dataclasses import dataclass, field, fields
-from typing import Callable, Optional
+from typing import Callable, Optional, Union
 from uuid import UUID
 
 import langsmith as ls
@@ -14,73 +14,14 @@ from langchain_core.runnables import RunnableBinding, RunnableSequence
 from langsmith.schemas import Example, Run
 from langsmith.utils import LangSmithConflictError
 
-DEFAULT_OPTIMIZER_MODEL_CONFIG = {
-    "model": "claude-3-5-sonnet-20241022",
-    "max_tokens_to_sample": 8192,
-}
+
+# Import optimizer configs
+from promptim.optimizers.metaprompt import Config as MetaPromptConfig
+from promptim.optimizers.fewshot import Config as FewShotConfig
+from promptim.optimizers.feedback_guided import Config as FeedbackGuidedConfig
+
 DEFAULT_PROMPT_MODEL_CONFIG = {"model": "claude-3-5-haiku-20241022"}
 
-DEFAULT_METAPROMPT = """You are an expert prompt engineer tasked with improving prompts for AI tasks.
-You will use all means necessary to optimize the scores for the provided prompt so that the resulting model can
-perform well on the target task.
-
-## Current prompt
-
-The following is the current best-performing prompt:
-
-<current_prompt>
-{current_prompt}
-</current_prompt>
-
-Your generations will replace the content within the <TO_OPTIMIZE></TO_OPTIMIZE> tags. The rest is fixed context over which you have no control. The TO_OPTIMIZE and CONTEXT\
- tags are provided here to help you disambiguateand not present in the prompt itself.
-
-## Previous Prompt Attempts
-
-You previously attempted to use the following prompts, but they earned worse scores than the current one:
-<other_attempts>
-{other_attempts}
-</other_attempts>
-
-Reflect on your previous attempts to ensure you search for and identify better patterns.
-
-## Annotated results:
-<results>
-{annotated_results}
-</results>
-
-## Task description:
-<task_description>
-{task_description}
-</task_description>
-
-Unless otherwise specified, higher scores are better (try to maximize scores). Aim for perfect scores across all examples.
-
-In your head, search through all edits, planning the optimization step-by-step:
-1. Analyze the current results and where they fall short
-2. Identify patterns in successful vs unsuccessful cases
-3. Propose specific improvements to address the shortcomings
-4. Generate an improved prompt that maintains all required formatting
-
-The improved prompt must:
-- Keep all original input variables
-- Maintain any special formatting or delimiters
-- Focus on improving the specified metrics
-- Be clear and concise.
-- Avoid repeating mistakes.
-
-Use prompting strategies as appropriate for the task. For logic and math, consider encourage more chain-of-thought reasoning, 
-or include reasoning trajectories to induce better performance. For creative tasks, consider adding style guidelines.
-Or consider including exemplars.
-
-Output your response in this format:
-<analysis>
-Your step-by-step analysis here...
-</analysis>
-
-<improved_prompt>
-Your improved prompt here...
-</improved_prompt>"""
 
 SystemType = Callable[[ChatPromptTemplate, dict], dict]
 """Takes the current prompt and the example inputs and returns the results."""
@@ -335,13 +276,7 @@ class Task(TaskLike):
         return self.get_prompt_system(prompt)
 
 
-@dataclass(kw_only=True)
-class OptimizerConfig:
-    model: dict = field(
-        metadata={
-            "description": "Model configuration dictionary specifying the model name, parameters, and other settings used during optimization."
-        }
-    )
+OptimizerConfig = Union[MetaPromptConfig, FewShotConfig, FeedbackGuidedConfig]
 
 
 @dataclass(kw_only=True)

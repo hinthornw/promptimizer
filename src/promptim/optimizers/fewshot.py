@@ -1,17 +1,39 @@
-from typing import List
+from dataclasses import dataclass, field
+from typing import List, Literal
+
 from langsmith.evaluation._arunner import ExperimentResultRow
-from promptim import types as pm_types, _utils as pm_utils
-from promptim.optimizers.base import BaseOptimizationAlgorithm
+from promptim import _utils as pm_utils
+from promptim import types as pm_types
+from promptim.optimizers import base as optimizers
 
 
-class FewShotInsertionAlgorithm(BaseOptimizationAlgorithm):
+@dataclass(kw_only=True)
+class FewShotOptimizerConfig(optimizers.Config):
+    """Configuration for the few-shot optimization algorithm."""
+
+    kind: Literal["fewshot"] = field(
+        default="fewshot",
+        metadata={
+            "description": "The fewshot optimizer that selects few-shot examples and inserts them into the prompt."
+        },
+    )
+    few_shot_selector: dict = field(
+        metadata={"description": "Configuration for the few-shot example selector."}
+    )
+
+
+class FewShotInsertionAlgorithm(optimizers.BaseOptimizer):
     """
     A simple example of an algorithm that selects few-shot examples and inserts them into the prompt.
     This might integrate with a separate FewShotSelector class.
     """
 
-    def __init__(self, model, few_shot_selector, meta_prompt: str):
-        self.model = model
+    config_cls = FewShotOptimizerConfig
+
+    def __init__(
+        self, *, model: optimizers.MODEL_TYPE, few_shot_selector, meta_prompt: str
+    ):
+        super().__init__(model)
         self.few_shot_selector = few_shot_selector
         self.meta_prompt = meta_prompt
 

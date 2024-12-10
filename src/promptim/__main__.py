@@ -34,7 +34,7 @@ def get_tasks(task_name: str):
 
 
 def load_task(name_or_path: str):
-    from promptim.trainer import Task
+    from promptim.types import Task
 
     task = get_tasks(name_or_path)
     if task:
@@ -78,9 +78,9 @@ async def run(
     commit: bool = True,
 ):
     task, config = load_task(task_name)
-    from promptim.trainer import PromptOptimizer
+    from promptim.trainer import PromptTrainer
 
-    optimizer = PromptOptimizer.from_config(
+    optimizer = PromptTrainer.from_config(
         config.get("optimizer", config.get("optimizer_config", {}))
     )
 
@@ -238,7 +238,7 @@ def _try_get_prompt(client: Client, prompt: str | None, yes: bool):
     from langchain_core.prompts.structured import StructuredPrompt
     from langchain_core.runnables import RunnableBinding, RunnableSequence
 
-    from promptim.trainer import PromptWrapper
+    from promptim.types import PromptWrapper
 
     expected_run_outputs = 'predicted: AIMessage = run.outputs["output"]'
     if prompt is None and not yes:

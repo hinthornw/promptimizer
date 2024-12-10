@@ -99,7 +99,7 @@ class MetaPromptOptimizer(optimizers.BaseOptimizer):
     def __init__(
         self,
         *,
-        model: optimizers.MODEL_TYPE,
+        model: optimizers.MODEL_TYPE | None = None,
         meta_prompt: str | None = None,
     ):
         super().__init__(model=model)

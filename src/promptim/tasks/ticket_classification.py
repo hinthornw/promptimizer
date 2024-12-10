@@ -4,7 +4,7 @@ import logging
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
-from promptim.trainer import PromptWrapper, Task
+from promptim.types import PromptWrapper, Task
 
 logger = logging.getLogger(__name__)
 

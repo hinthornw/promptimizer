@@ -3,7 +3,7 @@ from typing import Literal
 from langchain_openai import ChatOpenAI
 from pydantic import BaseModel, Field
 
-from promptim.trainer import PromptWrapper, Task
+from promptim.types import PromptWrapper, Task
 
 GRADER_TEMPLATE = """Your job is to look at a question, a gold target, and a predicted answer, and then assign a grade of either ["CORRECT", "INCORRECT", "NOT_ATTEMPTED"].
 First, I will give examples of each grade, and then you will grade a new example.

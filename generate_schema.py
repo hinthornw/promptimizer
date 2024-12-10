@@ -5,7 +5,7 @@ from typing import Any, Optional, Type
 from pydantic import BaseModel, Field, create_model
 from pydantic.json_schema import model_json_schema
 
-from promptim.trainer import Config
+from promptim.config import Config
 
 
 def get_schema(cls: Type[Any]) -> dict:

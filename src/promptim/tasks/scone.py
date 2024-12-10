@@ -1,4 +1,4 @@
-from promptim.trainer import PromptWrapper, Task
+from promptim.types import PromptWrapper, Task
 
 
 def exact_match(run, example):

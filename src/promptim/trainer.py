@@ -3,6 +3,7 @@ import time
 from collections import defaultdict
 from typing import Literal, Optional
 from uuid import UUID
+from dataclasses import asdict, is_dataclass
 
 import langsmith as ls
 from langchain.chat_models import init_chat_model
@@ -13,9 +14,8 @@ from langsmith.schemas import Example
 from pydantic import BaseModel, Field
 from promptim import types as pm_types
 from promptim import _utils as pm_utils
-from promptim.optimizers.base import BaseOptimizer
-from promptim.optimizers.metaprompt import MetaPromptOptimizer
-from promptim.optimizers.fewshot import FewShotInsertionAlgorithm
+from promptim import optimizers as pm_optimizers
+from promptim import config as pm_config
 from rich import print as richprint
 from rich.console import Console
 from rich.panel import Panel
@@ -53,7 +53,7 @@ class PromptTrainer:
 
     def __init__(
         self,
-        optimizer: BaseOptimizer,
+        optimizer: pm_optimizers.BaseOptimizer,
         client: Optional[ls.Client] = None,
         seed: int = 42,
     ):
@@ -70,21 +70,20 @@ class PromptTrainer:
         self.rng = random.Random(seed)
 
     @classmethod
-    def from_config(cls, config: dict):
+    def from_config(cls, config: dict | pm_config.Config):
         """Create a PromptTrainer from a configuration dictionary.
 
         Args:
             config: Either a MetaPromptOptimizerConfig or FewShotOptimizerConfig
         """
-        cp = config.copy()
-        kind = cp.get("kind", "metaprompt")
-
-        if kind == "metaprompt":
-            optimizer = MetaPromptOptimizer.from_config(cp)
-        elif kind == "fewshot":
-            optimizer = FewShotInsertionAlgorithm.from_config(cp)
+        if is_dataclass(config):
+            cp = asdict(config)
         else:
-            raise ValueError(f"Unknown optimizer kind: {kind}")
+            cp = config.copy()
+        optimizer = cp.get("optimizer") or {}
+        kind = optimizer.get("kind") or "metaprompt"
+        optimizer_config = {**optimizer, "kind": kind}
+        optimizer = pm_optimizers.load_optimizer(optimizer_config)
 
         return cls(optimizer=optimizer)
 
@@ -624,7 +623,7 @@ class PromptOptimizer(PromptTrainer):
         meta_prompt: Optional[str] = None,
         seed: int = 42,
     ):
-        optimizer = MetaPromptOptimizer(
+        optimizer = pm_optimizers.MetaPromptOptimizer(
             model=model,
             meta_prompt=meta_prompt or pm_types.DEFAULT_METAPROMPT,
         )

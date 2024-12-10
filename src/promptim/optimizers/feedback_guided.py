@@ -10,8 +10,8 @@ analyze their inputs/outputs and suggest specific improvements to the prompt.
 Focus on patterns in the failures and propose concrete changes."""
 
 
-@dataclass
-class Config(optimizers.BaseConfig):
+@dataclass(kw_only=True)
+class Config(optimizers.Config):
     kind: Literal["feedback_guided"] = field(
         default="feedback_guided",
         metadata={
@@ -42,13 +42,11 @@ class FeedbackGuidedOptimizer(optimizers.BaseOptimizer):
     def __init__(
         self,
         *,
-        model: optimizers.MODEL_TYPE,
-        meta_prompt: str,
+        model: optimizers.MODEL_TYPE | None = None,
         score_threshold: float = 0.8,
         recommendation_prompt: Optional[str] = None,
     ):
-        self.model = model
-        self.meta_prompt = meta_prompt
+        super().__init__(model=model)
         self.score_threshold = score_threshold
         self.recommendation_prompt = (
             recommendation_prompt or _DEFAULT_RECOMMENDATION_PROMPT

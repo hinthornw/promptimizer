@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import List, Literal
+from typing import List, Literal, Callable
 
 from langsmith.evaluation._arunner import ExperimentResultRow
 from promptim import _utils as pm_utils
@@ -8,7 +8,7 @@ from promptim.optimizers import base as optimizers
 
 
 @dataclass(kw_only=True)
-class FewShotOptimizerConfig(optimizers.Config):
+class Config(optimizers.Config):
     """Configuration for the few-shot optimization algorithm."""
 
     kind: Literal["fewshot"] = field(
@@ -22,20 +22,22 @@ class FewShotOptimizerConfig(optimizers.Config):
     )
 
 
-class FewShotInsertionAlgorithm(optimizers.BaseOptimizer):
+class FewShotOptimizer(optimizers.BaseOptimizer):
     """
     A simple example of an algorithm that selects few-shot examples and inserts them into the prompt.
     This might integrate with a separate FewShotSelector class.
     """
 
-    config_cls = FewShotOptimizerConfig
+    config_cls = Config
 
     def __init__(
-        self, *, model: optimizers.MODEL_TYPE, few_shot_selector, meta_prompt: str
+        self,
+        *,
+        model: optimizers.MODEL_TYPE | None = None,
+        few_shot_selector: Callable | None = None,
     ):
-        super().__init__(model)
+        super().__init__(model=model)
         self.few_shot_selector = few_shot_selector
-        self.meta_prompt = meta_prompt
 
     async def improve_prompt(
         self,
@@ -45,7 +47,7 @@ class FewShotInsertionAlgorithm(optimizers.BaseOptimizer):
         other_attempts: List[pm_types.PromptWrapper],
     ) -> pm_types.PromptWrapper:
         # 1. Use the few_shot_selector to pick examples
-        few_shots = self.few_shot_selector.select_examples(results, task)
+        few_shots = self.few_shot_selector(results, task)
 
         # 2. Insert these examples into the prompt:
         #    For simplicity, assume the prompt has a <FEW_SHOT_EXAMPLES> placeholder

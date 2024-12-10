@@ -3,7 +3,7 @@ from typing import List, Type
 from langsmith.evaluation._arunner import ExperimentResultRow
 from promptim import types as pm_types
 from dataclasses import dataclass, field, is_dataclass, asdict
-from langchain_core.chat_models import BaseChatModel
+from langchain_core.language_models import BaseChatModel
 from langchain.chat_models import init_chat_model
 
 MODEL_TYPE = str | BaseChatModel | dict
@@ -13,7 +13,7 @@ MODEL_TYPE = str | BaseChatModel | dict
 class Config:
     kind: str
     model: MODEL_TYPE = field(
-        default={
+        default_factory=lambda: {
             "model": "claude-3-5-sonnet-20241022",
             "max_tokens_to_sample": 8192,
         }

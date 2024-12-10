@@ -5,13 +5,14 @@ from typing import Literal, Optional, Callable, Coroutine, TypeVar, Union, Any
 from uuid import UUID
 from dataclasses import asdict, is_dataclass
 import datetime
+import functools
 
 import langsmith as ls
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
 from langsmith.evaluation import _arunner, _runner
 from langsmith.evaluation._arunner import ExperimentResultRow
-from langsmith.schemas import Example
+from langsmith.schemas import Example, TracerSession
 from promptim import types as pm_types
 from promptim import _utils as pm_utils
 from promptim import optimizers as pm_optimizers
@@ -103,8 +104,10 @@ class PromptTrainer:
         annotation_queue: str | None = None,
         debug: bool = False,
         commit_prompts: bool = False,
+        experiment_name: str | None = None,
     ) -> tuple[pm_types.PromptWrapper, float]:
         """Optimizes a prompt for a specific task through multiple iterations."""
+        experiment_name = experiment_name or f"Prompt Optimization - {task.name}"
         initial_prompt = pm_types.PromptWrapper.from_config(task.initial_prompt)
         if initial_prompt.prompt_str:
             if commit_prompts:
@@ -159,6 +162,13 @@ class PromptTrainer:
                 progress.console.print(
                     "[yellow]Warning: Using the same examples for train, dev, and test may lead to overfitting.[/yellow]"
                 )
+                if not train_examples:
+                    raise ValueError(
+                        "The dataset is empty. Please provide a non-empty dataset. "
+                        "Ensure that you have correctly specified the dataset name in your config file, "
+                        "and that the dataset has been properly uploaded to LangSmith. "
+                        f"Current dataset name: '{task.dataset}'. "
+                    )
             else:
                 train_examples = sorted(
                     self.client.list_examples(
@@ -194,6 +204,7 @@ class PromptTrainer:
             train_examples, dev_examples, test_examples = self._validate_split_examples(
                 train_examples, dev_examples, test_examples, progress.console
             )
+
             progress.update(ptsk, advance=1)
 
         with Progress() as progress:
@@ -210,13 +221,28 @@ class PromptTrainer:
                     task.baseline_experiment
                 )
             else:
+                baseline_session = await _queue(
+                    self,
+                    _create_experiment,
+                    client=self.client,
+                    dataset_id=train_examples[0].dataset_id,
+                    experiment_name=experiment_name + "- baseline",
+                )
                 baseline_experiment_results = await self._evaluate_prompt(
                     current_prompt,
                     task,
                     dev_examples,
                     debug=debug,
                     system_config=system_config,
+                    experiment=baseline_session,
                 )
+                if experiment_url := _get_url(
+                    baseline_session, dev_examples[0].dataset_id
+                ):
+                    progress.console.print(
+                        f"See baseline experiment at: {experiment_url}"
+                    )
+
                 baseline_scores = await self.calculate_scores(
                     baseline_experiment_results
                 )
@@ -255,8 +281,26 @@ class PromptTrainer:
                 advance=1,
                 description="[cyan]Optimizing prompt on epoch 1...",
             )
-
+            training_session_fut = _queue(
+                self,
+                _create_experiment,
+                client=self.client,
+                dataset_id=train_examples[0].dataset_id,
+                experiment_name=experiment_name + "- train [epoch 0]",
+                metadata={
+                    "split": "train",
+                    "epoch": 0,
+                },
+            )
             for epoch in range(epochs):
+                training_session = await training_session_fut
+                if experiment_url := _get_url(
+                    training_session, train_examples[0].dataset_id
+                ):
+                    progress.console.print(
+                        f"See experiment for epoch {epoch} at: {experiment_url}"
+                    )
+
                 self.optimizer.on_epoch_start(epoch, task)
                 self.rng.shuffle(train_examples)
                 if train_size:
@@ -271,7 +315,6 @@ class PromptTrainer:
                     f"[yellow]Epoch {epoch+1} batches", total=len(batches)
                 )
                 all_train_scores = []
-                experiment_name = None
                 avg_score = -1
                 for bix, batch in enumerate(batches):
                     if (
@@ -292,9 +335,17 @@ class PromptTrainer:
                             task,
                             batch,
                             debug=debug,
-                            experiment_name=experiment_name,
+                            experiment=training_session,
                             system_config=system_config,
                         )
+                    training_session_fut = _queue(
+                        self,
+                        _create_experiment,
+                        client=self.client,
+                        dataset_id=train_examples[0].dataset_id,
+                        experiment_name=experiment_name + f" - train [epoch {epoch+1}]",
+                        metadata={"epoch": epoch + 1, "split": "train"},
+                    )
                     next_action = "continue"
                     if annotation_queue:
                         results, next_action = await self._wait_for_annotation_queue(
@@ -387,6 +438,29 @@ class PromptTrainer:
                     description="[cyan]Optimizing prompt...",
                 )
 
+            test_baseline_session_fut = _queue(
+                self,
+                _create_experiment,
+                client=self.client,
+                dataset_id=train_examples[0].dataset_id,
+                experiment_name=experiment_name + "- test baseline",
+                metadata={
+                    "split": "test",
+                    "which": "baseline",
+                },
+            )
+            test_final_session_fut = _queue(
+                self,
+                _create_experiment,
+                client=self.client,
+                dataset_id=train_examples[0].dataset_id,
+                experiment_name=experiment_name + "- test final",
+                metadata={
+                    "split": "test",
+                    "which": "final",
+                },
+            )
+
             # Step 3: Test
             progress.update(
                 main_task, advance=10, description="[cyan]Running final tests..."
@@ -400,12 +474,14 @@ class PromptTrainer:
                 test_examples,
                 debug=debug,
                 system_config=system_config,
+                experiment=await test_baseline_session_fut,
             )
             final_test_results = await self._evaluate_prompt(
                 best_prompt,
                 task,
                 test_examples,
                 debug=debug,
+                experiment=await test_final_session_fut,
                 system_config=system_config,
             )
             progress.update(
@@ -541,7 +617,7 @@ class PromptTrainer:
         task: pm_types.Task,
         data: str | list,
         debug: bool = False,
-        experiment_name: str | None = None,
+        experiment: str | TracerSession | None = None,
         system_config: dict | None = None,
     ) -> list[ExperimentResultRow]:
         """Evaluates a prompt against a task's dataset and evaluators."""
@@ -561,18 +637,17 @@ class PromptTrainer:
             data=data,
             evaluators=task.evaluators,
             max_concurrency=0 if debug else None,
-            experiment=experiment_name,
-            experiment_prefix="Optimizer",
+            experiment=experiment,
+            experiment_prefix="Optimizer" if not experiment else None,
             metadata=metadata,
         )
         now = datetime.datetime.now(datetime.timezone.utc)
         # Temporary: permit run ingestion to extend existing experiment
         _queue(
             self,
-            lambda: self.client.update_project(
-                project_id=results._manager._experiment.id,
-                end_time=now + datetime.timedelta(days=999),
-            ),
+            self.client.update_project,
+            project_id=results._manager._experiment.id,
+            end_time=now + datetime.timedelta(days=999),
         )
         return [r async for r in results]
 
@@ -676,7 +751,82 @@ T = TypeVar("T")
 SyncOrAsyncCallable = Union[Callable[[], T], Callable[[], Coroutine[Any, Any, T]]]
 
 
-def _queue(trainer, func: SyncOrAsyncCallable[T]) -> asyncio.Future[T]:
+def _get_url(project: Any, dataset_id: str) -> None | str:
+    if project and project.url:
+        project_url = project.url.split("?")[0]
+        base_url = project_url.split("/projects/p/")[0]
+        return (
+            f"{base_url}/datasets/{dataset_id}/compare?"
+            f"selectedSessions={project.id}"
+        )
+
+
+def _create_experiment(
+    client: ls.Client,
+    dataset_id: str,
+    experiment_name: str,
+    description: str | None = None,
+    metadata: dict | None = None,
+):
+    """Create a new experiment with an incrementing index in the name.
+
+    The naming scheme is: "{experiment_name} [idx]" where idx starts at 1
+    and increments for each existing experiment with the same base name.
+    """
+    from langsmith import utils as ls_utils
+
+    # Find existing experimens with the same base name
+    existing = list(
+        client.list_projects(
+            reference_dataset_id=dataset_id,
+            name_contains=experiment_name,
+            metadata={"__creation_source": "promptim"},
+        )
+    )
+
+    # Extract indices from existing names
+    indices = []
+    for p in existing:
+        try:
+            if p.name.startswith(experiment_name):
+                # Extract [idx] from the end if it exists
+                if match := p.name.strip().split(" ")[-1]:
+                    if match.startswith("[") and match.endswith("]"):
+                        try:
+                            idx = int(match[1:-1])
+                            indices.append(idx)
+                        except ValueError:
+                            continue
+        except (ValueError, IndexError):
+            continue
+
+    # Get next available index
+    next_idx = max(indices, default=-1) + 1
+
+    # Create new experiment name with index
+    new_name = f"{experiment_name} [{next_idx}]"
+
+    num_attempts = 10
+    for attempt in range(num_attempts):
+        try:
+            return client.create_project(
+                new_name,
+                description=description,
+                reference_dataset_id=dataset_id,
+                metadata={"__creation_source": "promptim", **(metadata or {})},
+            )
+        except ls_utils.LangSmithConflictError:
+            # If there's a conflict, increment the index and try again
+            next_idx += 1
+            new_name = f"{experiment_name} [{next_idx}]"
+
+    raise ValueError(
+        f"Could not find a unique experiment name in {num_attempts} attempts."
+        " Please try again with a different experiment name."
+    )
+
+
+def _queue(trainer, func: SyncOrAsyncCallable[T], *args, **kwargs) -> asyncio.Future[T]:
     """Queue a function to be executed by the trainer.
 
     Args:
@@ -686,7 +836,7 @@ def _queue(trainer, func: SyncOrAsyncCallable[T]) -> asyncio.Future[T]:
         Future that will contain the result of the function
     """
     fut = trainer._loop.create_future()
-    trainer._aqueue[fut] = func
+    trainer._aqueue[fut] = functools.partial(func, *args, **kwargs)
     return fut
 
 

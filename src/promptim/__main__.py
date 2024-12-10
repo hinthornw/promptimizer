@@ -619,9 +619,9 @@ def create_task(
         },
         "initial_prompt": {"identifier": identifier},
     }
-    config["$schema"] = (
-        "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
-    )
+    config[
+        "$schema"
+    ] = "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
     with open(os.path.join(path, "config.json"), "w") as f:
         json.dump(config, f, indent=2)
 
@@ -810,9 +810,9 @@ def create_example_task(path: str, name: str):
         },
     }
 
-    config["$schema"] = (
-        "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
-    )
+    config[
+        "$schema"
+    ] = "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
     with open(os.path.join(path, "config.json"), "w") as f:
         json.dump(config, f, indent=2)
 

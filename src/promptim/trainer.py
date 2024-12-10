@@ -1,25 +1,18 @@
-import copy
-import json
 import random
 import time
 from collections import defaultdict
-from dataclasses import dataclass, field, fields
-from difflib import SequenceMatcher
-from typing import Callable, Literal, Optional
+from typing import Literal, Optional
 from uuid import UUID
 
 import langsmith as ls
 from langchain.chat_models import init_chat_model
 from langchain_core.language_models import BaseChatModel
-from langchain_core.load import dumps
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.prompts.structured import StructuredPrompt
-from langchain_core.runnables import RunnableBinding, RunnableSequence
 from langsmith.evaluation import _arunner, _runner
 from langsmith.evaluation._arunner import ExperimentResultRow
-from langsmith.schemas import Example, Run
-from langsmith.utils import LangSmithConflictError
+from langsmith.schemas import Example
 from pydantic import BaseModel, Field
+from promptim import types as pm_types
+from promptim import _utils as pm_utils
 from rich import print as richprint
 from rich.console import Console
 from rich.panel import Panel
@@ -42,362 +35,6 @@ def _noop(*args, **kwargs):
 _runner.print = _noop  # type: ignore
 _arunner.print = _noop  # type: ignore
 
-DEFAULT_OPTIMIZER_MODEL_CONFIG = {
-    "model": "claude-3-5-sonnet-20241022",
-    "max_tokens_to_sample": 8192,
-}
-DEFAULT_PROMPT_MODEL_CONFIG = {"model": "claude-3-5-haiku-20241022"}
-
-DEFAULT_METAPROMPT = """You are an expert prompt engineer tasked with improving prompts for AI tasks.
-You will use all means necessary to optimize the scores for the provided prompt so that the resulting model can
-perform well on the target task.
-
-## Current prompt
-
-The following is the current best-performing prompt:
-
-<current_prompt>
-{current_prompt}
-</current_prompt>
-
-Your generations will replace the content within the <TO_OPTIMIZE></TO_OPTIMIZE> tags. The rest is fixed context over which you have no control. The TO_OPTIMIZE and CONTEXT\
- tags are provided here to help you disambiguateand not present in the prompt itself.
-
-## Previous Prompt Attempts
-
-You previously attempted to use the following prompts, but they earned worse scores than the current one:
-<other_attempts>
-{other_attempts}
-</other_attempts>
-
-Reflect on your previous attempts to ensure you search for and identify better patterns.
-
-## Annotated results:
-<results>
-{annotated_results}
-</results>
-
-## Task description:
-<task_description>
-{task_description}
-</task_description>
-
-Unless otherwise specified, higher scores are better (try to maximize scores). Aim for perfect scores across all examples.
-
-In your head, search through all edits, planning the optimization step-by-step:
-1. Analyze the current results and where they fall short
-2. Identify patterns in successful vs unsuccessful cases
-3. Propose specific improvements to address the shortcomings
-4. Generate an improved prompt that maintains all required formatting
-
-The improved prompt must:
-- Keep all original input variables
-- Maintain any special formatting or delimiters
-- Focus on improving the specified metrics
-- Be clear and concise.
-- Avoid repeating mistakes.
-
-Use prompting strategies as appropriate for the task. For logic and math, consider encourage more chain-of-thought reasoning, 
-or include reasoning trajectories to induce better performance. For creative tasks, consider adding style guidelines.
-Or consider including exemplars.
-
-Output your response in this format:
-<analysis>
-Your step-by-step analysis here...
-</analysis>
-
-<improved_prompt>
-Your improved prompt here...
-</improved_prompt>"""
-
-SystemType = Callable[[ChatPromptTemplate, dict], dict]
-"""Takes the current prompt and the example inputs and returns the results."""
-
-
-@dataclass(kw_only=True)
-class PromptConfig:
-    identifier: str | None = field(
-        default=None,
-        metadata={
-            "description": "Identifier for a prompt from the hub repository. Mutually exclusive with prompt_str."
-        },
-    )
-    prompt_str: str | None = field(
-        default=None,
-        metadata={
-            "description": "Raw prompt string to optimize locally. Mutually exclusive with identifier."
-        },
-    )
-    model_config: dict | None = field(
-        default=None,
-        metadata={
-            "description": "Configuration dictionary specifying model parameters for optimization."
-        },
-    )
-    which: int = field(
-        default=0,
-        metadata={"description": "Index of the message to optimize within the prompt."},
-    )
-
-    def __post_init__(self):
-        if self.identifier and self.prompt_str:
-            raise ValueError(
-                "Cannot provide both identifier and prompt_str. Choose one."
-            )
-        elif not self.identifier and not self.prompt_str:
-            raise ValueError("Must provide either identifier or prompt_str.")
-
-
-@dataclass(kw_only=True)
-class PromptWrapper(PromptConfig):
-    _cached: ChatPromptTemplate | None = None
-    _postlude: RunnableBinding | BaseChatModel | None = None
-
-    @classmethod
-    def from_config(cls, config: PromptConfig):
-        return cls(
-            identifier=config.identifier,
-            prompt_str=config.prompt_str,
-            model_config=config.model_config,
-            which=config.which,
-        )
-
-    def load(self, client: ls.Client | None = None) -> ChatPromptTemplate:
-        if self._cached is None:
-            if self.prompt_str:
-                self._cached = ChatPromptTemplate.from_messages(
-                    [("user", self.prompt_str)]
-                )
-                self._postlude = init_chat_model(
-                    **(self.model_config or DEFAULT_PROMPT_MODEL_CONFIG)
-                )
-            else:
-                client = client or ls.Client()
-                postlude = None
-                prompt = client.pull_prompt(self.identifier, include_model=True)
-                if isinstance(prompt, RunnableSequence):
-                    prompt, bound_llm = prompt.first, prompt.steps[1]
-                    if isinstance(bound_llm, RunnableBinding):
-                        if tools := bound_llm.kwargs.get("tools"):
-                            bound_llm.kwargs["tools"] = _ensure_stricty(tools)
-                    if isinstance(prompt, StructuredPrompt) and isinstance(
-                        bound_llm, RunnableBinding
-                    ):
-                        seq: RunnableSequence = prompt | bound_llm.bound
-
-                        rebound_llm = seq.steps[1]
-                        if tools := rebound_llm.kwargs.get("tools"):
-                            rebound_llm.kwargs["tools"] = _ensure_stricty(tools)
-                        parser = seq.steps[2]
-                        postlude = RunnableSequence(
-                            rebound_llm.bind(
-                                **{
-                                    **{
-                                        k: v
-                                        for k, v in (bound_llm.kwargs or {}).items()
-                                        if k not in rebound_llm.kwargs
-                                    },
-                                    **(self.model_config or {}),
-                                }
-                            ),
-                            parser,
-                        )
-                    else:
-                        postlude = bound_llm
-                else:
-                    # Default to gpt-4o-mini
-                    postlude = init_chat_model(
-                        **(self.model_config or DEFAULT_PROMPT_MODEL_CONFIG)
-                    )
-                    if isinstance(prompt, StructuredPrompt):
-                        postlude = RunnableSequence(*(prompt | postlude).steps[1:])
-                self._cached = prompt
-                self._postlude = postlude
-        return self._cached
-
-    def get_prompt_str(self, client: ls.Client | None = None) -> str:
-        tmpl = self.load(client)
-        msg = tmpl.messages[self.which]
-        try:
-            return msg.prompt.template  # type: ignore
-        except Exception as e:
-            raise NotImplementedError(
-                f"Unsupported message template format. {msg}"
-            ) from e
-
-    def get_prompt_str_in_context(self, client: ls.Client | None = None) -> str:
-        tmpl = self.load(client)
-        formatted = []
-        for i, msg in enumerate(tmpl.messages):
-            kind = msg.__class__.__name__.replace("MessagePromptTemplate", "").replace(
-                "Human", "User"
-            )
-            if i == self.which:
-                formatted.append(
-                    f"""<TO_OPTIMIZE kind="{kind}">
-{msg.prompt.template}
-</TO_OPTIMIZE>"""
-                )
-            else:
-                formatted.append(
-                    f"""<CONTEXT kind="{kind}">
-{msg.prompt.template}
-</CONTEXT>
-"""
-                )
-        return "\n".join(formatted)
-
-    @classmethod
-    def from_prior(cls, prior: "PromptWrapper", output: str):
-        copied = prior._cached
-        if not copied:
-            raise ValueError("Cannot load from unloaded prior.")
-        copied = copy.deepcopy(copied)
-        tmpl = copied.messages[prior.which]
-        tmpl.prompt.template = output  # type: ignore
-        return cls(
-            identifier=prior.identifier,
-            prompt_str=prior.prompt_str,
-            which=prior.which,
-            _cached=copied,
-            _postlude=prior._postlude,
-        )
-
-    def push_prompt(
-        self,
-        *,
-        identifier: Optional[str] = None,
-        include_model_info: bool = True,
-        client: ls.Client,
-    ) -> str:
-        prompt = self.load(client)
-        identifier = identifier or self.identifier.rsplit(":", maxsplit=1)[0]
-        try:
-            if not include_model_info or not self._postlude:
-                new_id = client.push_prompt(identifier, object=prompt)
-            else:
-                second = (
-                    self._postlude.first
-                    if isinstance(self._postlude, RunnableSequence)
-                    else self._postlude
-                )
-                seq = RunnableSequence(prompt, second)
-                return self._push_seq(client, seq, identifier)
-
-        except LangSmithConflictError:
-            return identifier
-
-        return ":".join(
-            new_id
-            # Remove the https:// prefix
-            .split("/prompts/", maxsplit=1)[1]
-            # Rm query string
-            .split("?")[0]
-            # Split the repo from the commit hash
-            .rsplit("/", maxsplit=1)
-        )
-
-    @staticmethod
-    def _push_seq(client: ls.Client, seq: RunnableSequence, identifier: str):
-        manifest = json.loads(dumps(seq))
-        manifest["id"] = ("langsmith", "playground", "PromptPlayground")
-        return client.push_prompt(identifier, object=manifest)
-
-
-@dataclass(kw_only=True)
-class TaskLike:
-    """Represents a specific task for prompt optimization."""
-
-    name: str
-    """The identifier for the task, used for logging and referencing."""
-    dataset: str
-    """The name of the dataset in LangSmith to be used for training and evaluation."""
-    initial_prompt: PromptConfig
-    """The starting prompt configuration, which will be optimized during the process."""
-    description: str = ""
-    """A detailed explanation of the task's objectives and constraints."""
-    evaluator_descriptions: dict = field(default_factory=dict)
-    """A mapping of evaluator names to their descriptions, used to guide the optimization process."""
-    baseline_experiment: Optional[UUID] = None
-    """The UUID of a previous experiment to use as a baseline for comparison, if available."""
-
-
-@dataclass(kw_only=True)
-class Task(TaskLike):
-    """Represents a specific task for prompt optimization with additional execution details."""
-
-    evaluators: list[Callable[[Run, Example], dict]]
-    """A list of functions that assess the quality of model outputs, each returning a score and optional feedback."""
-    system: Optional[SystemType] = None
-    """A custom system configuration for executing the prompt, allowing for task-specific processing."""
-
-    @classmethod
-    def from_dict(cls, d: dict):
-        d_ = d.copy()
-        kwargs = {"initial_prompt": PromptWrapper(**d_.pop("initial_prompt")), **d_}
-
-        field_names = {f.name for f in fields(cls)}
-        kwargs = {k: v for k, v in kwargs.items() if k in field_names}
-        return cls(**kwargs)
-
-    def describe(self):
-        descript = self.description if self.description else self.name
-        evaluator_desc = "\n".join(
-            [f"- {key}: {value}" for key, value in self.evaluator_descriptions.items()]
-        )
-        return f"{descript}\n\nDescription of scores:\n{evaluator_desc}"
-
-    @staticmethod
-    def get_prompt_system(prompt_wrapper: PromptWrapper):
-        async def prompt_system(prompt: ChatPromptTemplate, inputs: dict):
-            return await prompt_wrapper._postlude.ainvoke(prompt.invoke(inputs))
-
-        return prompt_system
-
-    @property
-    def system_safe(self) -> SystemType:
-        if self.system:
-            return self.system
-
-        prompt = PromptWrapper.from_config(self.initial_prompt)
-        return self.get_prompt_system(prompt)
-
-
-@dataclass(kw_only=True)
-class OptimizerConfig:
-    model: dict = field(
-        metadata={
-            "description": "Model configuration dictionary specifying the model name, parameters, and other settings used during optimization."
-        }
-    )
-
-
-@dataclass(kw_only=True)
-class Config(TaskLike):
-    optimizer: OptimizerConfig | None = field(
-        default=None,
-        metadata={
-            "description": "Optimization configuration specifying model settings and hyperparameters. If None, default configuration will be used."
-        },
-    )
-    evaluators: str = field(
-        metadata={
-            "description": (
-                "Import path to evaluator functions in format 'file_path:variable_name'. The functions should evaluate prompt quality.\n\n"
-                "Example:\n    ./task/evaluators.py:evaluators"
-            )
-        }
-    )
-    system: Optional[str] = field(
-        default=None,
-        metadata={
-            "description": (
-                "Import path to system configuration in format 'file_path:variable_name'. Defines how prompts are executed.\n\n"
-                "Example:\n    ./task/my_system.py:chain"
-            )
-        },
-    )
-
 
 class OptimizedPromptOutput(BaseModel):
     """Schema for the optimized prompt output."""
@@ -419,20 +56,20 @@ class PromptOptimizer:
     ):
         self.model = model
         self.client = ls.Client()
-        self.meta_prompt = meta_prompt or DEFAULT_METAPROMPT
+        self.meta_prompt = meta_prompt or pm_types.DEFAULT_METAPROMPT
         random.seed(seed)
         self.rng = random.Random(seed)
 
     @classmethod
     def from_config(cls, config: dict):
         cp = config.copy()
-        model_config = cp.pop("model", DEFAULT_OPTIMIZER_MODEL_CONFIG)
+        model_config = cp.pop("model", pm_types.DEFAULT_OPTIMIZER_MODEL_CONFIG)
         model = init_chat_model(**model_config)
         return cls(model, **cp)
 
     async def optimize_prompt(
         self,
-        task: Task,
+        task: pm_types.Task,
         *,
         system_config: dict | None = None,
         train_size: Optional[int] = None,
@@ -441,9 +78,9 @@ class PromptOptimizer:
         annotation_queue: str | None = None,
         debug: bool = False,
         commit_prompts: bool = False,
-    ) -> tuple[PromptWrapper, float]:
+    ) -> tuple[pm_types.PromptWrapper, float]:
         """Optimizes a prompt for a specific task through multiple iterations."""
-        initial_prompt = PromptWrapper.from_config(task.initial_prompt)
+        initial_prompt = pm_types.PromptWrapper.from_config(task.initial_prompt)
         if initial_prompt.prompt_str:
             if commit_prompts:
                 richprint(
@@ -768,7 +405,7 @@ class PromptOptimizer:
         richprint(Panel(table, title="Final Report", border_style="bold"))
 
         # Print prompt diff
-        _print_rich_diff(
+        pm_types.RunnableBinding_print_rich_diff(
             initial_prompt.get_prompt_str_in_context(),
             best_prompt.get_prompt_str_in_context(),
             title="Final Prompt Updates",
@@ -779,7 +416,7 @@ class PromptOptimizer:
         self,
         results: list[ExperimentResultRow],
         queue_name: str,
-        task: Task,
+        task: pm_types.Task,
         progress: Progress,
     ) -> tuple[list[ExperimentResultRow], Literal["continue"]]:
         """Add runs to the queue and block to let a reviewer check the outputs and leave feedback."""
@@ -875,8 +512,8 @@ class PromptOptimizer:
 
     async def _evaluate_prompt(
         self,
-        prompt_config: PromptWrapper,
-        task: Task,
+        prompt_config: pm_types.PromptWrapper,
+        task: pm_types.Task,
         data: str | list,
         debug: bool = False,
         experiment_name: str | None = None,
@@ -923,12 +560,12 @@ class PromptOptimizer:
 
     async def apply_metaprompt(
         self,
-        current_prompt: PromptWrapper,
+        current_prompt: pm_types.PromptWrapper,
         meta_prompt: str,
-        task: Task,
+        task: pm_types.Task,
         results: list[ExperimentResultRow],
         other_attempts: list | None = None,
-    ) -> PromptWrapper:
+    ) -> pm_types.PromptWrapper:
         annotated_results = self._format_results(results)
         return await self._generate_improved_prompt(
             current_prompt,
@@ -957,12 +594,12 @@ class PromptOptimizer:
 
     async def _generate_improved_prompt(
         self,
-        current_prompt: PromptWrapper,
+        current_prompt: pm_types.PromptWrapper,
         meta_prompt: str,
         annotated_results: str,
-        task: Task,
+        task: pm_types.Task,
         other_attempts: list | None = None,
-    ) -> PromptWrapper:
+    ) -> pm_types.PromptWrapper:
         """Generates an improved prompt using the meta-prompt."""
         chain = self.model.with_structured_output(OptimizedPromptOutput)
         inputs = meta_prompt.format(
@@ -976,11 +613,11 @@ class PromptOptimizer:
             ),
         )
         prompt_output: OptimizedPromptOutput = await chain.ainvoke(inputs)
-        candidate = PromptWrapper.from_prior(
+        candidate = pm_types.PromptWrapper.from_prior(
             current_prompt, prompt_output.improved_prompt
         )
 
-        _print_rich_diff(
+        pm_utils.print_rich_diff(
             current_prompt.get_prompt_str_in_context(self.client),
             candidate.get_prompt_str_in_context(self.client),
             "Updated Prompt",
@@ -1023,40 +660,3 @@ class PromptOptimizer:
             test_examples = dev_examples
 
         return train_examples, dev_examples, test_examples
-
-
-def _colorize_diff(diff):
-    for op, i1, i2, j1, j2 in diff.get_opcodes():
-        if op == "equal":
-            yield diff.a[i1:i2]
-        elif op == "insert":
-            yield f"[green]{diff.b[j1:j2]}[/green]"
-        elif op == "delete":
-            yield f"[red]{diff.a[i1:i2]}[/red]"
-        elif op == "replace":
-            yield f"[red]{diff.a[i1:i2]}[/red][green]{diff.b[j1:j2]}[/green]"
-
-
-def _print_rich_diff(original: str, updated: str, title: str = "") -> None:
-    diff = SequenceMatcher(None, original, updated)
-    colorized_diff = "".join(_colorize_diff(diff))
-    panel = Panel(
-        colorized_diff, title=title or "Prompt Diff", expand=False, border_style="bold"
-    )
-    richprint(panel)
-
-
-def _ensure_stricty(tools: list) -> list:
-    result = []
-    for tool in tools:
-        if isinstance(tool, dict):
-            strict = None
-            if func := tool.get("function"):
-                if parameters := func.get("parameters"):
-                    if "strict" in parameters:
-                        strict = parameters["strict"]
-            if strict is not None:
-                tool = copy.deepcopy(tool)
-                tool["function"]["strict"] = strict
-        result.append(tool)
-    return result

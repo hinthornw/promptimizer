@@ -127,7 +127,6 @@ class MetaPromptOptimizer(optimizers.BaseOptimizer):
         other_attempts: List[pm_types.PromptWrapper],
     ) -> pm_types.PromptWrapper:
         annotated_results = self._format_results(results)
-
         chain = self.model.with_structured_output(pm_types.OptimizedPromptOutput)
         inputs = self.meta_prompt.format(
             current_prompt=current_prompt.get_prompt_str_in_context(),

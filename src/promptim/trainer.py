@@ -1,9 +1,10 @@
 import random
 import time
 from collections import defaultdict
-from typing import Literal, Optional
+from typing import Literal, Optional, Callable, Coroutine, TypeVar, Union, Any
 from uuid import UUID
 from dataclasses import asdict, is_dataclass
+import datetime
 
 import langsmith as ls
 from langchain.chat_models import init_chat_model
@@ -11,7 +12,6 @@ from langchain_core.language_models import BaseChatModel
 from langsmith.evaluation import _arunner, _runner
 from langsmith.evaluation._arunner import ExperimentResultRow
 from langsmith.schemas import Example
-from pydantic import BaseModel, Field
 from promptim import types as pm_types
 from promptim import _utils as pm_utils
 from promptim import optimizers as pm_optimizers
@@ -21,6 +21,8 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress
 from rich.table import Table
+import asyncio
+import weakref
 
 
 def ltq():
@@ -37,15 +39,6 @@ def _noop(*args, **kwargs):
 
 _runner.print = _noop  # type: ignore
 _arunner.print = _noop  # type: ignore
-
-
-class OptimizedPromptOutput(BaseModel):
-    """Schema for the optimized prompt output."""
-
-    analysis: str = Field(
-        description="First, analyze the current results and plan improvements to reconcile them."
-    )
-    improved_prompt: str = Field(description="The improved prompt text")
 
 
 class PromptTrainer:
@@ -68,6 +61,14 @@ class PromptTrainer:
         self.client = client or ls.Client()
         random.seed(seed)
         self.rng = random.Random(seed)
+        self._loop = asyncio.get_running_loop()
+        self._aqueue: dict[asyncio.Future, Callable[[], Any]] = {}
+        self._task = self._loop.create_task(_run(self._aqueue, weakref.ref(self)))
+
+    async def wait_for_all(self) -> None:
+        """Wait for all queued tasks to complete."""
+        if self._aqueue:
+            await asyncio.gather(*self._aqueue.keys())
 
     @classmethod
     def from_config(cls, config: dict | pm_config.Config):
@@ -83,6 +84,10 @@ class PromptTrainer:
         optimizer = cp.get("optimizer") or {}
         kind = optimizer.get("kind") or "metaprompt"
         optimizer_config = {**optimizer, "kind": kind}
+        if "model" not in optimizer_config:
+            optimizer_config["model"] = cp.get(
+                "model", pm_types.DEFAULT_OPTIMIZER_MODEL_CONFIG
+            )
         optimizer = pm_optimizers.load_optimizer(optimizer_config)
 
         return cls(optimizer=optimizer)
@@ -429,6 +434,7 @@ class PromptTrainer:
             best_prompt.get_prompt_str_in_context(),
             title="Final Prompt Updates",
         )
+        await self.wait_for_all()
         return best_prompt, best_score
 
     async def _wait_for_annotation_queue(
@@ -559,6 +565,15 @@ class PromptTrainer:
             experiment_prefix="Optimizer",
             metadata=metadata,
         )
+        now = datetime.datetime.now(datetime.timezone.utc)
+        # Temporary: permit run ingestion to extend existing experiment
+        _queue(
+            self,
+            lambda: self.client.update_project(
+                project_id=results._manager._experiment.id,
+                end_time=now + datetime.timedelta(days=999),
+            ),
+        )
         return [r async for r in results]
 
     async def calculate_scores(
@@ -655,3 +670,65 @@ class PromptOptimizer(PromptTrainer):
             task=task,
             other_attempts=other_attempts or [],
         )
+
+
+T = TypeVar("T")
+SyncOrAsyncCallable = Union[Callable[[], T], Callable[[], Coroutine[Any, Any, T]]]
+
+
+def _queue(trainer, func: SyncOrAsyncCallable[T]) -> asyncio.Future[T]:
+    """Queue a function to be executed by the trainer.
+
+    Args:
+        func: Function to execute, can be sync or async
+
+    Returns:
+        Future that will contain the result of the function
+    """
+    fut = trainer._loop.create_future()
+    trainer._aqueue[fut] = func
+    return fut
+
+
+async def _run(
+    aqueue: dict[asyncio.Future[T], SyncOrAsyncCallable[T]],
+    trainer_ref: weakref.ReferenceType["PromptTrainer"],
+) -> None:
+    """Run queued functions, either sync or async, in order."""
+    loop = asyncio.get_running_loop()
+
+    while True:
+        await asyncio.sleep(0)
+
+        if not aqueue:
+            continue
+
+        trainer = trainer_ref() if trainer_ref is not None else None
+        if trainer is None:
+            break
+
+        current_batch = aqueue.copy()
+
+        try:
+            results = []
+            for fut, func in current_batch.items():
+                try:
+                    if asyncio.iscoroutinefunction(func):
+                        result = await func()
+                    else:
+                        result = await loop.run_in_executor(None, func)
+                    results.append((fut, result))
+                except Exception as e:
+                    fut.set_exception(e)
+                    del aqueue[fut]
+
+            for fut, result in results:
+                fut.set_result(result)
+                del aqueue[fut]
+
+        except Exception as e:
+            for fut in current_batch:
+                if not fut.done():
+                    fut.set_exception(e)
+                if fut in aqueue:
+                    del aqueue[fut]

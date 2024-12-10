@@ -13,9 +13,13 @@ from langchain_core.prompts.structured import StructuredPrompt
 from langchain_core.runnables import RunnableBinding, RunnableSequence
 from langsmith.schemas import Example, Run
 from langsmith.utils import LangSmithConflictError
-
+from pydantic import BaseModel, Field
 
 DEFAULT_PROMPT_MODEL_CONFIG = {"model": "claude-3-5-haiku-20241022"}
+DEFAULT_OPTIMIZER_MODEL_CONFIG = {
+    "model": "claude-3-5-sonnet-20241022",
+    "max_tokens_to_sample": 8192,
+}
 
 
 SystemType = Callable[[ChatPromptTemplate, dict], dict]
@@ -269,6 +273,15 @@ class Task(TaskLike):
 
         prompt = PromptWrapper.from_config(self.initial_prompt)
         return self.get_prompt_system(prompt)
+
+
+class OptimizedPromptOutput(BaseModel):
+    """Schema for the optimized prompt output."""
+
+    analysis: str = Field(
+        description="First, analyze the current results and plan improvements to reconcile them."
+    )
+    improved_prompt: str = Field(description="The improved prompt text")
 
 
 def _ensure_stricty(tools: list) -> list:

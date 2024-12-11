@@ -82,9 +82,8 @@ class PromptTrainer:
             cp = asdict(config)
         else:
             cp = config.copy()
-        optimizer = cp.get("optimizer") or {}
-        kind = optimizer.get("kind") or "metaprompt"
-        optimizer_config = {**optimizer, "kind": kind}
+        kind = cp.get("kind") or "metaprompt"
+        optimizer_config = {**cp, "kind": kind}
         if "model" not in optimizer_config:
             optimizer_config["model"] = cp.get(
                 "model", pm_types.DEFAULT_OPTIMIZER_MODEL_CONFIG
@@ -366,13 +365,26 @@ class PromptTrainer:
                         batch_task,
                         description=f"[yellow]Epoch {epoch+1} (Avg training score: {avg_score:.4f})",
                     )
-                    improved = await self.optimizer.improve_prompt(
-                        current_prompt=current_prompt,
-                        results=results,
-                        task=task,
-                        other_attempts=other_attempts,
-                    )
-                    current_prompt = improved
+                    with ls.tracing_context(project_name=training_session.name):
+                        with ls.trace(
+                            name="improve_prompt",
+                            inputs={
+                                "current": current_prompt.get_prompt_str(),
+                            },
+                        ) as rt:
+                            setattr(rt, "session_id", training_session.id)
+                            run_url = self.client.get_run_url(
+                                run=rt, project_id=training_session.id
+                            )
+                            progress.console.print(f"See optimizer trace: {run_url}")
+                            improved = await self.optimizer.improve_prompt(
+                                current_prompt=current_prompt,
+                                results=results,
+                                task=task,
+                                other_attempts=other_attempts,
+                            )
+                            rt.add_outputs({"improved": improved.get_prompt_str()})
+                            current_prompt = improved
                     if commit_prompts:
                         pushed_id = current_prompt.push_prompt(client=self.client)
                         progress.console.print(f"See prompt checkpoint: {pushed_id}")
@@ -643,11 +655,13 @@ class PromptTrainer:
         )
         now = datetime.datetime.now(datetime.timezone.utc)
         # Temporary: permit run ingestion to extend existing experiment
-        _queue(
-            self,
-            self.client.update_project,
-            project_id=results._manager._experiment.id,
-            end_time=now + datetime.timedelta(days=999),
+        asyncio.create_task(
+            _queue(
+                self,
+                self.client.update_project,
+                project_id=results._manager._experiment.id,
+                end_time=now + datetime.timedelta(days=999),
+            )
         )
         return [r async for r in results]
 

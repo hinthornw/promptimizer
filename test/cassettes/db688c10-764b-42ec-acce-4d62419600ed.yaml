@@ -1,0 +1,3556 @@
+interactions:
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Social Media
+      Activism"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet
+      about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//VJDBbhNBDIZfZXCuG7RN2xTtbYlEUGmrqlkOtKpWZtakAzN2uva0pVGe
+        gSNHDrwEbwWPUO1WSHD0Z/+//XsLoYMKkq7bcu8VN3X69OZtkx4vzx9uT84/I53NoQD7uqFhilRx
+        TVBAL3EAqBrUkA0KSNJRhAp8xNzRdH96OFVhJpvOytlBOZ+VUIAXNmKD6mr719REYpt1cB1PGerc
+        lntnzfvFydHxrF7I8vJY8vJdknoFBTCmQbckph6NmnuiYX/gTTaotmAjqGCVMEaH3oKwOo/sImHn
+        TNzHsHb+BnlN+tJ9kNy7OwmeXEIz6vWF+/Pj+8/fv765yUp8wHhKXcDaW7gLmtzkNTU3tBj1bnKB
+        Qam+x56YVGG3uy5ATTZtT6jC/wccG0q3mdgTVJxjLCCPP622zwlaky/ECtX+/KAAyfYvmx/tdk8A
+        AAD//wMApFKjc7IBAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f017974d90ff987-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:24 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:24Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '74000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:29Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3993'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:22Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '474000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:24Z'
+      request-id:
+      - req_011M18GRjzidYXHQJUQmCNfN
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Meme Culture"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRzU4bQQx+FcscepmgJQuhOzdK2tICBwQ3VK2GXWcz7KwnGXta0igXnqK3vmIf
+        AW2gUnv0Z38/trfoW7Q4SFcXR+d57i/K05uzq/5rvKw6fd+cPP1Eg7pZ0ThFIq4jNJhiGAEn4kUd
+        KxocYksBLTbB5ZYm5eRkIpGZdDItpsfFbFqgwSayEiva++1fUY0x1FlG1X2Usc51cVTNnq4vNw99
+        dduvy4+3N2flRbVeo0F2w8j7TEzJKd39IBr9Pa+yot2i7gGL1zSQWLhbEmT23ymJCxAcd9l1BHEB
+        uiTwrJSY9BA+pTjAPHYEGmHuRZNrlFr4EDeL5IlbMxI27xK9EcW3BI+xJwFdOoWH5LmDLOBCAI0d
+        6ZLSIfz5/esZDsYwV35BcPDlzfE8B82JcLf7ZlA0rupETiL/f5J9Q2idiRtCyzkEg3n/Bbt93bnW
+        2BML2nJ2bDBm/Rc7rXa7FwAAAP//AwAols0h5AEAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f017974dbf096e4-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:25 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:25Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '75000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:29Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3998'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:22Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '475000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:25Z'
+      request-id:
+      - req_018mjUVPW1XeecSnRgVZnU8B
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Endangered
+      Species"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet
+      about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRy24aUQz9FcdZdDNEA6RUml1aQaQs+krSpKoqdLlj4JYZe3LtS4oQ/8Cy6oZt
+        dvmBfhSfUA1p1HbpY/scH581hhILrHU2zruvJu8/ueFidEt8l5bds8Hr5kKmmKGtGmqnSNXNCDOM
+        UrWAUw1qjg0zrKWkCgv0lUsldfqdlx0VZrJOL++d5oNejhl6YSM2LL6sn0lNpBonbVkPp7R1Gufd
+        2w/XN6kp5+eXIzt9O1k1w89XFx8xQ3Z1u3dOTNEZXd0TtfqBm2RYrNEOQIH73c8HGHLpeEaRSrhs
+        yAdSOKsoWgHvUoSmckz2QmESpAxLihpsBUHBGcSgiyMYRamhdt9ILXiwMKOoYAIWeAXTKDPNwEti
+        q0gV9I/E1HkC+m6BvQXhE7ghqJMaOG/Act8yNFGMvIHNSQkC+0hlmFQEPpKzFEnBcdm2Q4S5mwRz
+        picwXFJctTxB+ElZj2C/2z7ud9sf+932Fxz/9fxs+fiNsFJcunYLN5uvGapJM47kVPj/EA4NpbtE
+        7AkLTlWVYTrkXqyfvjw2WRArFv1BP0NJ9i/WzXubzW8AAAD//wMAEa2SOlcCAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f017974df7e96bf-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:25 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:25Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '76000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:28Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3995'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:22Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '476000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:25Z'
+      request-id:
+      - req_01T8DMoJmN8iisMPYtNfERk8
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Data Privacy"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//VFHdbtNgDH0Vz7tNprYb3cgdZSq9gKoChvgRqtzETT+R2uGzv1ZZ1ZdA
+        3POKPAJK0CS49LF9zvHxCUOFBe6tXo/Gi9lidj+9+3BwefG427bL7eudrDBD71rup9iMasYMozY9
+        QGbBnMQxw71W3GCBZUOp4vw6f5abirDnk9HkZjSdjDDDUsVZHIsvpydSV23WyXrWwUpfp/VoPJut
+        5rerm+XD7d08tIvl28/z8fQjZii07/desXAk5/dH5l4/SJscixP6ABT4+9fPH3BPTrCK4UBlB2/I
+        naNdwCqqc+nQaYrQcjQVaiDIVuOePKiAShOEr+DBGMyjSg0tmR01VpYBC20aBj9qvqXSNQIl37F4
+        KIf1DEgq2DCUlDxoMqCNJgfbUQxSg7FY8HBgqMjpCj71PqpQB6cGtqrexiAOweBATRq0cqgTxQqC
+        wzEYN90FXPbHPd12+bLbcHzHZYrBOzyfv2Zoru06MpnK/0EPDePviaVkLCQ1TYZp+G1x+pvk2vUb
+        i2FxPZ1kqMn/xe6en89/AAAA//8DAJ3Vkls6AgAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f017974d9b2645f-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:25 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:25Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '77000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:27Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3996'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:22Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '477000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:25Z'
+      request-id:
+      - req_01XHJ6w6sniqK3keDyowcdUX
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Ethical
+      AI"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about
+      the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name":
+      "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description": "Submit
+      your tweet.", "input_schema": {"type": "object", "properties": {"tweet": {"type":
+      "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//VFFdS+tAEP0rw/Q1ldh49TZvEUTrBRGpXqpI2CZjs3QzG3dmDVL63y8b
+        uaCP58yZc+bjgLbFEnvZ1fnp1bj98xTvb9+rt81Tu/w7LvvHYo0Z6udASUUiZkeYYfAuEUbEihpW
+        zLD3LTkssXEmtjQv5r/m4plJ54t8cZafL3LMsPGsxIrly+G/qXrv6ijJdRol4Vjnp4+b9fPvzf7O
+        e+4u40242SxNSEFs+tR3TUzBKK1HokRbHqJieUCdiBIrgZHAtB+GGwLLUK0yIO1sYxw0nsW2ycB6
+        FjCBYDDB9D6ynsADyZAEW0fQ0gc5P/TECsQSAwlUK9gS05tVgS72hq1+wthZR9BbtTujlncQrOzl
+        BGZXX5nVCmbVagICs28Ra2o6PB5fMxT1Qx3IiOefl5kKQu+RuCEsOTqXYZyeUR6+Vq/V74kFy+K8
+        yNBH/c5dFMfjPwAAAP//AwDI/pil6wEAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f017974d8f9fa12-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:25 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:25Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '79000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:26Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3992'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:22Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '479000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:25Z'
+      request-id:
+      - req_01XBX2XL4wSVyHrfXPVtvwLR
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Biodiversity"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRW24TQRC8Sqf5yM868itWtH8EET4CUQhRBELImozL9sDs9DLda7O2fIMIcYPc
+        BK6UI6C1hRQ+u7qrulS15TDjkitdTPuDy7vLO3jbnJ+5m1frqpJ23L7/wAVbW6O7gqpbgAvOEjvA
+        qQY1l4wLrmSGyCX76JoZeqPeaU8lJVhv2B+O+5Nhnwv2kgzJuPy8/SdqInHaaKe6t9LNzbQ/uHh5
+        epWDu558vfrxqR2vP242N2fXXHByVcd7g4TsDLdroPsfUt0Yl1u2PVDy0+PDn6fHX7/pPMgsrJA1
+        WFvSa5dteawUwyqkBZmroZbbI7rIUpGX7CJlYK5kQtmFNJcMNS0IK+SWtIYPUKqja5Uc+dz40HEk
+        4oTewo6V6iwGb+TSjDwi7jujZEtQSD5jFu4jaOVygLUkc4phDpJE0uRON8FO6FYWsCVyQWuQd4mQ
+        tMkgR7bMB+/woq0aKppLpsUhkCBpb91LhSN6enz4SS+eJ/DOmSEr73ZfClaTeprhVNL/VewXiu8N
+        kgeXqYmx4Gbffrk9ZD01+YakXI4mo4KlsefYoD/Z7f4CAAD//wMA6KDKH10CAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f017974dce47e2a-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:26 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:26Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '80000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:26Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3992'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:22Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '480000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:26Z'
+      request-id:
+      - req_01Jxm56QkMRvovVUL9Fq4jx2
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Fake News"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//VFHLjhNBDPwV4z1w6USTZF/MDRF2Ae2utBKXBaGot8eTaU2PO7TdCaMo
+        X8EHIPGFfALqQUhwdNmuKpeP6BuscZDtplpcvEsP94/U3Y6H9GbRXK87/bD/hAZ13FGZIhG7JTSY
+        YiiAFfGilhUNDrGhgDW6YHNDs9XsYiaRmXS2rJbn1eWyQoMushIr1p+Pf0k1xrDJUlgnK6XOm2rx
+        9PYbd49XjqTXq/apjefr9d01GmQ7lL1bYkpW6eOBqOh73mXF+og6ATX++vH9J9zYnoDpIGADJX0B
+        68gvFZ4peNoT0J7SqJ3nLYwxQyLbQOTgmebwOhzsKNBapzPXkesN7Cn5dgSJOTkSA5YbKNs9uOTV
+        OxvCOIf3DNoR2C1BbGHw4rmNabDqIxt4pqJmQQabFFxkyQOlMjnZ9AJDTAR+2MVUogXtLE9G53B2
+        T423d14pWTfC2Y3fdlpOfKCD4On0xaBo3G0SWYn8f7hTQ+hrJnaENecQDObpn/XxT3objT2xYL26
+        XBmMWf/FXi1Op98AAAD//wMA+PTHZS4CAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f017974db8fce9c-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:26 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:26Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '80000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:26Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3997'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:22Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '480000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:26Z'
+      request-id:
+      - req_01Sjj176xPqFcoi5GwpW3yBz
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Net Neutrality"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//VJFNbxNBDIb/inEOvWyqbfqhdm9AS4kooYIeqBCKnF1nM+msZzr2EKVR
+        /jvarYLo0Y+/Xr/eoWuwwk7beXnyefP19ub9Zn1zzy1/SelDvHyhBgu0beS+ilWpZSwwBd8DUnVq
+        JIYFdqFhjxXWnnLD49Px+ViDCNt4Uk7OyotJiQXWQYzFsPq1Owy1EPw8az91kNLHeV6e3LnzR32h
+        y66T9ZWL+e5j+rT9iQUKdX3fLQsnMn7YMPf7ncRsWO3QBlDhjA2EsyXyzrYVPKwYYnJSu+gZbEUG
+        5D04MU7CBpZouXQ16Cpk38CCwRKTcQP8nMn77TFM7UhBgsE6qwEtQjbQyNwU4PrUK1mSS8KqQNKA
+        Ewl/yFyQY7gOcmTg2WD6415hwXXoeiUMLRk/MUdOCmE5oIOudzCasc3+HQKjb5FlelA9unatM/Lf
+        Xbsyxf3+d4FqIc4TkwZ5a/CQUH7OLDVjJdn7AvPw02r36uDcwhOLYnV6cVZgyPY/u5rs938BAAD/
+        /wMAc6AjzzICAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f017974da03cfd5-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:27 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:26Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '80000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:26Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3994'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:22Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '480000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:26Z'
+      request-id:
+      - req_014Ts8s1ix3ZRcQVxJmQTgdK
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Deepfakes"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//VFJBbttADPwKwRx6kQPHcQ1HNwc1WhdIgaJGcygKY72ipYVXpCxSihXD
+        fy9WaYv2yOHMkJzdC4YCc6y13E3vvrda1Lys56fT4+L4uG1WXbX/hhna0FBikaorCTNsJSbAqQY1
+        x4YZ1lJQxBx9dF1Bk/vJ+4kKM9lkNp3Np4vZFDP0wkZsmP+4/DE1kbjrNLmOq6S6203v1ovz1/Ow
+        9cvXF1mtvzw9fXp9OH/GDNnVSfeRmFpntH0hSvMDN51hfkEbgRxXm0n5m1NAQdQc3JEUXEuwJy91
+        4BIC+5acBi7jACpNFdSCT4pbeK5CJLCKBpDDgVpIVAs9QSPpiOBi9tZ2UQVaF5TAC3tqWcHtpTOo
+        gwY+SFs7C8LguICmDb3zwy1s7J2CbzsfXAQTKKinKA0UZORHek1WSaGjjKwK3kUou1BQDEyaNOz6
+        UDpLawYF6iX26SwjX7FEKQdoSRthDfs43MLNh78x3Kw262SpeL3+zFBNml2KQvj/NxkbSqeO2BPm
+        3MWYYTd+g/zyFvrO5EismN8v5hlKZ/9iy4fr9RcAAAD//wMAiCwMfGUCAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f017974edfb175f-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:27 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:27Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '80000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:27Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3991'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:22Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '480000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:27Z'
+      request-id:
+      - req_0193jcaGKqGu5GuajBAwNLR5
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Cancel Culture"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SRW28aQQyF/4plHvqyREAuKvtSEdpEveUl9KaqQt4Zl4yYtTdrTyOC+O/VgiK1
+        jz4+Pv5k7zFFrLG1zXoy/bq6sd01/Xj7ZfsxETdP79o7mmOFvut4cLEZbRgr7DUPApklcxLHCluN
+        nLHGkKlEHp+PL8emIuzj2WR2MbmaTbDCoOIsjvXP/Uuoq+Z1sSH1iDLUZT2Zzpd320X34XF58f1m
+        3oXr5+nzt9UtVijUDnO3LNyT8+qJedifpCuO9R79KNS4JAmcIZTspecaFhC1NJnHHDccwZ60j2/g
+        vcOD5mjQsXaZgULQIk5NZmiKQyAByqaQmSK4QqsNtCxOOfnuDD6xvzKIyUIxA39gkDIsNiCJ8DtJ
+        BIKG8qBBwwOcQM/WqVhq0hBycmq/SX9Y2OwMRif25QkdRvcaEuXPHBPBaPFCeBzGw+FXhebarXsm
+        U/n/pMeG8WNhCYy1lJwrLMcv1vvTzdauWxbD+vxqVqEW/1d7fXk4/AUAAP//AwDpPUYtJAIAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f017974c9f096d7-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:28 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:28Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '80000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:28Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3999'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:22Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '480000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:28Z'
+      request-id:
+      - req_01MQmT5zjHTUroxRnQJB6eD5
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Autonomous
+      Vehicles"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet
+      about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRTW8TQQz9K8a9bqqwXSqxFwRCVEKCS0L5EoomM97swOw4jD27SaP8iV6QuPTK
+        z+tPQBNUAUc/P/s9Px/QO2xxkM1q/rhxH8d487V/s9lNaVzUL/q1+3CNFep+S4VFImZDWGHiUAAj
+        4kVNVKxwYEcBW7TBZEezi9mTmXCMpLN6Xjfzy3qOFVqOSlGx/Xx4WKrMYZWlbD1ZKXUuZnYTL67e
+        1n5699q6XfPyU78kgxVGM5S5K4qUjNJyIir6Pm6zYntAPQEt3t/9/HF/d/sLlj1BlzUnAu5Ak4my
+        5aRGPUfwAj0legTPs3LkgbPASL23gQRMIkg0csiF62983EDPE0wEA490DgvTUYLExkkFiVy25IpC
+        13lbgYkOfLSJjJCDgdc+eN1DxwlMCOfwvjcKtLNeSWDPGQYWBbPmrCAUuplLfiya1iR5Bmd/LV4/
+        ODx7dTpsSbbH4/FLhaK8XRVFjv+He2oIfc8ULWEbcwgV5tM/28Of9FbK3ygKtheXTYWc9V/saXM8
+        /gYAAP//AwCr217rLgIAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a22a31cfc8-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:32 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:32Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '43000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:59Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3995'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '443000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:32Z'
+      request-id:
+      - req_01ELX7knDCnX9MB1UVGuFvG5
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Gaming"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRQW4TQRD8StM5+DJGjh1vxF4QIOIDcQgQJUIIWRO7vTvJbPcy07PLyvIX+AI/
+        yNt4AppFSHCs6u6qUvUB3Q5LbGK1mZ0uQnF71Q11f96+S+sPF4V23DIa1KGlvEUx2orQYBCfCRuj
+        i2pZ0WAjO/JY4tbbtKPpYrqcRmEmnc5n87NZMZ+hwa2wEiuWXw5/RVXEb1LMqmOUjFMOc0UPl93Z
+        EB4LXq4X559tT2+/o0G2Tb5bEVOwSjc9UfZ33CbF8oA6EiX++vnjCVa2cVyBizxReEhRwUIt9/eD
+        AaeTCBa821PUwdMzuKtJawowSJoEAscqcHH9ycDH61U0IAHW71+/igbyFo3XnQuarIdegt9Bb51m
+        u72MIs/hrrbZZZAUYG87CU4JKtsQBFfVCiz9SzhZ2YbCpdsTnNy6HUnGcaQdV2+kaRI7HfB4/Gow
+        qrSbQDYK/1/eOIj0LRFvCUtO3htM47/Kw592NiqPxBHLRXFqUJL+y71YHo+/AQAA//8DAKpPoEIO
+        AgAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a23ee2172e-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:32 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:32Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '45000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:59Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3991'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '445000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:32Z'
+      request-id:
+      - req_01CFhSKcSeWeuY73c2APmBCP
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Entrepreneurship"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1xRQW7bQAz8Cktf5cCxEsPQLUFa51AEFewih6IwNtLE2lriqktu3NTwJ/KBoNe+
+        Lk8I5KBA2yOH5MxwuGdfc8GdbtaT03I7nafbeVn1158XP8oFcFXlF5yxPfYYpqDqNuCMY2gHwKl6
+        NSfGGXehRssFV61LNcb5+HysQQQ2nk6mZ5PZdMIZV0EMYlx82f8htRDaddKB9WhlqNN6cnrmv5Wr
+        ZbO8/LD7ebMtr2efco03nLG4bthbQBCdYbUDBn0vfTIu9mxHoOD3YhF9hCBFbXxf0G2DCPI1nFIH
+        GDVJrcUJvTw//Xp5fvpNqxSFHkOK1A+3BSEvFsjRXVIvUM0I3V10Feje+TZFkFNyZHBVg5iRk5oE
+        D4ikFnpq4aJ42ZzQqgHtQmyHNmp9E/Ei4cGZD/KORv/7pdHSXLTUf/T3oNFVhOsu/YYPh68ZD+zr
+        CKdB/s3w2FB8T5AKXEhq24zT8W3F/i2ktYUtRLnIZ3nGIdnf2Pz8cHgFAAD//wMAQ8oKqBUCAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a27d29ce38-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:32 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:32Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '46000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:58Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3987'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '446000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:32Z'
+      request-id:
+      - req_01TZoMGwHhe4crKtZZBnNdAT
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Esports"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//VFHLbhNRDP0V4y66maA0j4rOBkXQFomHVFRUBELRzYwzuc0de3LtmzCK
+        IrFiCRv2/QM+ii/oJ6AZqARLH/v4HB/v0ZeYY63VfHhy1s7KV5Pnz8r2YnT+cnx182T2YvMZM7S2
+        oW6KVF1FmGGU0AFO1as5NsywlpIC5lgEl0oajAfTgQoz2WA0HE2Gp6MhZlgIG7Fh/nH/sNREwjxp
+        t7W30tVpPjyZrJZX18VsertsqvZN8+H9+N3m9Q4zZFd3vEtiis7oekfU6XtukmG+R+uBHM+1kWgK
+        LhKYW3uuwFYEO4mhhEULahLrR3B/9+3n/d33r3ARpYbGFWsqOw47BROofQheWEGWIBw8E2w97Shq
+        BoXUDZk3vyWoXN0peAUWCMIVRbhNauBgJYtF++vLD2/HCg6qIAsXoFkRS00s/BhuVnKs0EqKsHRb
+        id4I6K99I1eDRGiCayk+haOHu44ue8m3tJWQzAvj4fApQzVp5pGcCv+fbt9Q2iTigjDnFEKGqX9o
+        vv8T39xkTayYj0/HGUqyf7Gz6eHwGwAA//8DAEFhwW8vAgAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a27d2f96e3-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:32 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:32Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '47000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:57Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3987'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '447000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:32Z'
+      request-id:
+      - req_01NMrUSSkpMoXXAaDbFHdHUa
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Drones"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRy27UQBD8laZz4OKVvF5wgi9olYjHIYgVkSKBkDXYvfZkx91mpmfBWe0h38At
+        l9z4vnwCGiMkcuyq7qpS9QFtixUOoavz5WWxuSnWTXtmyrN36378WDTfmlPMUKeR0haFYDrCDL24
+        BJgQbFDDihkO0pLDChtnYkuL1eLlIggz6aLIixd5WeSYYSOsxIrVl8M/URVxdQxJdY6S5ljny007
+        XpulnLe7D5ubWynLn5/Xl58wQzZDuntLTN4oXf0gSv6Wx6hYHVBnoMILL0yhgjdeBjDkrXEw9qLS
+        eTP2E6jAaJqd6QhacnZPfspAewoEWzdZ7mAwfk8ugPEEnvbiolphe5s4y20M6i2FZ/D4cH/3+PDr
+        N1z3Rp8HmCR6ULMjEE6KsI0aPYFsoU2hQKnpWZx002s4mXNeUdPDyXtm2Ztkgsfj1wyDylh7MkH4
+        aVMzEeh7JG4IK47OZRjn51SHv1XUKjvigNWqXGUoUf/HTl8dj38AAAD//wMAtKVIFfsBAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a28c1ace40-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '48000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:57Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3983'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '448000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01FLBgWiou2cSMHTRnnCRZjn
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Regenerative
+      Agriculture"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a
+      tweet about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRQWpbQQy9iipvv+E7tgP9OyckMZjQpjV00RQjz1e+J52vsWc0ToMx9ACmm9K1
+        Vz1AL9DD9AQ+QhmbQrrU09N7T9IGbY0VtrGZlb3JtVmPr+7icMKPw/Xt6Msq+EnAAvV5yZnFMVLD
+        WGDwLgMUo41Kolhg62t2WKFxlGru9rvDbvQirN2z8mxQnp+VWKDxoiyK1cfNP1H13s1SzKrHKLlO
+        s7J3cfnw4XH+9nW/pXhTj1fT1fTutsYChdo8d8PCgZSnT8zZ38oyKVYb1CNQ4WG/+wXvuDnx7Jph
+        1ARrktMUuIIxk7PSgC4YrijoooA3wnBNoQVSIJjaluGw3327l3u58D4qRG8dLJhcZlsxgSkyzK2v
+        7ZpDtPpcAEkNxrdzUjDOtqQMZkHSMPz5+h3IOXhaWMewDL5OJieQpMGq9SnCg/f1Kzjsf/447He/
+        s3Hn5QajBjrvU1SyQnPHOWsW6FyejEZGrRfcbj8VGNUvZzmfl/+PfGxEXiUWw1hJcq7AdPxrtTld
+        cab+M0vEqn8+KNAnfYn1ysF2+xcAAP//AwAKg+pqNwIAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a29b55d035-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '49000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:56Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3982'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '449000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01JQ92K5PXxdRGL4dpnP1kij
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Circular
+      Economy"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet
+      about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRy24TUQz9FeMu2NygPGhKZwdRYdMi0UCrglB0c8eZXDpjh2vfpKMof4DEuit+
+        A4kF/8IPwCegSalElz62z/E53mIsscBGq1l/8CIt1pfL6ebZ6/cTvmr8m9HZ+fOX6NDaFXVTpOor
+        QodJ6g7wqlHNs6HDRkqqscBQ+1xSb9Q77Kkwk/WG/eHT/njYR4dB2IgNiw/be1ITqWdZO9b9KV2d
+        Z/3Bu+lgcnMsh+lo8en87KoctxeLfIoO2Tfd3itiSt7o7Yao04+8yobFFm0PFPjn25efv25//P7+
+        FU6aefIhcgW2JJjEFHLtE5wEYWnaAi6XlAg2Xo1gTkEaUvCQSCWnQA5WScocTMEngpI0VkwlLCRB
+        LVzROlrrwHMJmtV8ZD+PdbQWGiJTiMyy9haFn8Ap2WOFRLaMfO0gUZk7gURZ6Y4iUWhDTSA5wca3
+        YAIeqkSdXVhky4kewcG9h38W4GD6QBl3u48O1WQ1S+RV+GHQ+4bS50wcCAvOde0w739bbO+SnJlc
+        EysWo/HIoWT7Hzs+2u3+AgAA//8DAHaakBw6AgAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a24abe67dc-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '50000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:55Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3993'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '450000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01WdX2GVX646sQGL6nrrc3yJ
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Sustainable
+      Fashion"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet
+      about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//VFFNahthDL2KKi+ymQnjnwQyuzKNDYFsarcESjGfZxTPxN9I40/6aozx
+        DQqly3aTaxS66F16geYIZdwW0qWepKf3ng7YVJhjq+tlNry7muzK6WT39qW9KWZXZf2quCvmmKDt
+        O+qnSNWtCRMM4nvAqTZqjg0TbKUijzmW3sWK0nF6kaowk6WjbDTJLkcZJlgKG7Fh/u7wj9RE/DJq
+        z3qS0tdxmQ1fr+X6Jl5Mbx9mdTcvbrfbm2KzwATZtf3ejJiCM1rsiPr7DXfRMD+gnYAcnx4//oB5
+        VHMNu5UnuHdaN8LQKJ8ZPEQ1cGCBuEqgsTMFB618oJbYXsDT4+evP798//XtExS1iBJQKel9aIgr
+        v4fWGYXGeU1Aa+lAqRSu0tr1ZI4r0Nh1EgzI6qZ0HlbBcaXnsJA1WU0hgR1B6RhatyGQGGDnQhVk
+        RQo7CRu4lwBWE3TeMdk5DJ5Zmf51MrguZW57TzCYBSIuvCgZHo/vE1STbhnIqfD/KZ8aSttIXBLm
+        HL1PMJ4emx/+xLg02RAr5uPLcYIS7Tk2zCbH428AAAD//wMArmS1hjgCAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a19a6496d7-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '51000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:55Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3994'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '451000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01JzDJYq8m4C7u1NrysSaEDp
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Digital
+      Nomads"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet
+      about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRQWobQRD8Sqd13Q27kmLwXkJCYoEJPjgGxYSwjHda2kEzPZuZHglJ6J5DTD4Q
+        yDf8Hn8geUKYNYbk1HR1d1VRfUSjsUEX121VL7bzuOiub5dvL7tUzz7qy3TYHLBA2Q+UtyhGtSYs
+        MHibARWjiaJYsEDnNVlssLMqaSpn5asyemaSclpN59XZtMICO89CLNh8Pj6Tive2TTGzjlZyn9qq
+        Pq8PPQ/m6mJxMXO3+/qT+bDhGgtk5fLdgpiCErrZEWV9w0MSbI4oI9Dgn1/f7x9/fvv98APeu7ug
+        OsNrkJ5Am7URZYG9UxqsWVGUvaUGlj0Fgp1ZGXBEEmGnWFOwKcoLWPqwyQyr4B3ckep6igV0apWL
+        Yg3OJxZlGMQP8SUsew9kI4GJYM32Wdz6TonxXBrWNBBrYgEdSLnXMHn35OxqNDa5JueFsi5MboLa
+        kn3DOrd4On0pMIof2kAqev4/xnEQ6Wsi7ggbTtYWmMbPNcennFrxG+KIzexsXqBP8i92Pj2d/gIA
+        AP//AwBO0eEWGAIAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a2ab67f95b-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '52000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:54Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3977'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '452000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01EAvHo4HxbdZyoGGFYvUXV1
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Space Exploration"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//VFHBjtNADP0Vy1zTqk1pVXJjVegJLrsSCISqacZNRp3Y6dhDW1WV+A4u
+        /CKfgJLVCrjZz/bz8/MNg8cKO212s/nS/LHcLDfpVJ4eui+b68Nl4z5hgXbtaegiVdcQFpgkDoBT
+        DWqODQvsxFPECuvosqfJYrKcqDCTTcpZ+Xq2KmdYYC1sxIbV19sLqYnEXdaBdZQy5Hk3m8+3/uNq
+        XR79G9voU7N93ObV9TMWyK4b5rbElJzR05lo2B+4z4bVDW0EKvz96+cPeOxdTRVYS3AI7CIckrAF
+        SlN4q3Am6LO2Y3kvmb1LgRTkAG3uHANd+ijJWRAugL5TugLTGXzQWsZsnwI3ClmhjqKUwAQye0qD
+        Kz5wA5IT1KJdqIEpNO1eUivip/A+SQcfXFJIA5cOo3SRPjomgzazaTEKO2VSg4MkOLKcI/mGxkiB
+        5Vm1TuHVeOi7v3rxfv9WoJr0u0ROhf+3eiwonTJxTVhxjrHAPH63uj17uTM5EitWi9WiQMn2L7Ze
+        3+9/AAAA//8DALsyFJI8AgAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a259ce2513-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '53000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:53Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3988'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '453000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_014ZT9K1QuC46zAVSGLYhdCe
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Nanotechnology"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SRYW/TQAyG/4rlfk2nrC3reh/RNASIqhIFDRCKzNUkp13s7M63Uqr+d5SgSfDR
+        r+3Hr+0zhgM67HPb1NfL7fNdWt92T7u03e1083X16a4lrNBOA49VnDO1jBUmjaNAOYdsJIYV9nrg
+        iA59pHLg+XL+ap5VhG2+qBer+mZRY4VexVgM3bfzC9RUY1PySJ2sjHFp6uvNr43Zcfuw//0uv37P
+        /gvdfv74iBUK9WPfGxZOZLw/Mo/zgwzF0J3RJsHhlkSNfScatT05+EAShhLJgrTQkxknIAPrGMi0
+        Dx6yp8hXcJ+0h54PwQdhMAWO7C2pBJ8rsC5ksCAnGOEQMuSOhpGpJcHPYiUxBAGCH6GFI52uYPZi
+        BWZvRfSZLKjA7H6q3bPv8HL5XmE2HZrElFX+v8uUyPxUWDyjkxJjhWV6hTv/XbwxfWTJ6JY3qwq1
+        2L/aen25/AEAAP//AwAFf3356QEAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a19dec96bf-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '54000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:52Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3993'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '454000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01Sw2herQ2D3beti9ZcfBnFj
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Cybersecurity"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SR3W4TQQyFX8U4F9xsqs1PS7p3UREIlFaV0ggQQqvJjrMZZeLZjD1dbaO8BOKe
+        V+QR0C5Cgkt/ts+xjs/oLBZ4lLrMJ3enRXU6fVrs04t5WM7uP68e29s3mKF2DfVTJGJqwgxj8D0w
+        Ik7UsGKGx2DJY4GVN8nSeDa+HktgJh1P8+k8v5nmmGEVWIkVi6/nv6Iagi+T9KrDKX2dynyy2Tzs
+        rz/yrc7tsppU96vV8vCywQzZHPu998QUjdJTS9T7O26SYnFGHUCBazUdPLvaecMKjkH3BNbVTo2H
+        NkRvX8Gvnz++w123pShUpei0AydAzxS7wPRaIJI0gcVtnXfaXcFGCERj4BoaI9KGaCUDYrP1BNN3
+        ywwMWzgQNdCFFEHCTlsTCVJjjZK9gtFgtzY7gtEH3oU1VTB6jEGp0i8hxbdGDV4u3zIUDU0ZyUjg
+        /3MaGkKnRFwRFpy8zzANrynOf4IoNRyIBYvZzTzDkPRftlhcLr8BAAD//wMAvHV9Q/kBAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a2bf2c270c-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '55000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:52Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3975'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '455000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01ARwx3hcTBpFuvDZKBeTVjP
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Streaming
+      Services"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet
+      about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//VJFNb9RADIb/iuUeuCRVmm0ryIULSyskEGKh5UMoGhJvMnRih7EnaXe1
+        /x1lgaoc/dh+/dreo2+xwkG7ujh7e399fn3jyvLDJjY8Dm33df3uFjO0h5GWKlJ1HWGGUcICnKpX
+        c2yY4SAtBaywCS61lK/yi1yFmSwvi/K8uCwLzLARNmLD6tv+n6iJhDrponq0ssSpLs7efB4/pfsv
+        u92WeaNXP+/m6f2LiBmyG5a+K2KKzujjTLTM9zwmw2qPdgQVbiySGzx3oBQn35BC7yaCSJOEZF7Y
+        76iFXmaYCRphTQMBsVE053kgtlN4HWWAH547ymdnTf9XzpOCCbReG5koLpRphiGpbzKwnmCWGFrw
+        Cs5AUoTtohHNj3oKt72zZwoPC+8kNwF99DoGZ1uJw0s4eVxgHR2cvPKdNxfWT/3h4fA9QzUZ60hO
+        hf+/5zGh9CsRN4QVpxAyTMcXVvs/B6tN7ogVq9XlKkNJ9pQ9vzgcfgMAAP//AwATcZwPIQIAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a1896fcfd5-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '56000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:51Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3999'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:29Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '456000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01JG4vzSELNApoKmveiQUGA6
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Voluntourism"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//VJHPbhNBDMZfxTgHLhuUpv/3ghRUQkvbS6NWgFA02XV2p52xw9iTNIry
+        Fty58IA8AtqtkMrRn7/5+bNnh77GEqM289HB6Yebye1VXt9sH5+/fLz4vHi4nyyusEDbrqhzkapr
+        CAtMEjrBqXo1x4YFRqkpYIlVcLmm4eHweKjCTDYcj8ZHo5PxCAushI3YsPy2+wc1kTDP2lH7KF2d
+        56ODu+vZ3flpe3Y2sfbrjY6nn9rp7SMWyC5276bElJzRbEPUzfe8yoblDq0XSrxUWEvIbJKT1wi1
+        eG4gSiJoXYpgrWNoROr38OfX75/w0PpA4PuAXljBJQJZGjGscqICvL1VqFKuvAtgApWw+poSWEsQ
+        hJuhUYrg48pVBsIQpHIBKokxszdP+g6uqYPUXqusCmSt7ywbt9WOGN0TgYPaL5eUiCuCTR/KkltT
+        8Ny8gcH9650GFy+EWW+AwTTIwoXLPgHu998LVJPVPJFT4f+P3TeUfuRuDpacQygw9/9b7l6uOTd5
+        IlYsD0+OCpRsr7Xz4/3+LwAAAP//AwCNZPnNPgIAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a279b8ce80-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '57000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:50Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3984'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '457000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01RJ6dShma65TEAs4oV1KbaG
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Hygge"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//VJHdbtswDIVfhWBulcJN1qz1ZbOfoFctMnQrhsJQZNpRLImeSWFwg7z7
+        YA8Ftksekt85IM/oaywxSlsV18/N04/Hhm7s7kGGU5fpqd3u7tCgjj1NUyRiW0KDA4dJsCJe1CZF
+        g5FrCliiCzbXtFwvb5bCKZEuV8XqQ7FZFWjQcVJKiuXP8ztUmUOVZaLOUaY6V8X1w93t6X7/st50
+        ah/pxTdflDyjwWTjtPeVEg1W6dtvosnfpz4rlmfUWSjxczwM1vnUgh4JHL+N8MkmL0dwnBz1CtzA
+        cWxbAuXajiV8t0OEQ7CpIxUDTfCuo2EiOJvqQGLAphosHFnB5X4COHZsr2DPkdRHktlMfOwDiULk
+        SEkFDsN7jsiicOLxCha72Xux5bfx2R9IYLGn0GztQHi5vBoU5b4ayAqn/+80N4R+ZUqOsEw5BIN5
+        fk15/nuISrmjJFiuN2uDnPVf7fbj5fIHAAD//wMAbs+u1vkBAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a27819ce84-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '58000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:50Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3986'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '458000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01P3jFqVmyRuvovEB84zaY4Y
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Mindfulness"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//VJFBbxpBDIX/imUOuQxoA0mq7LERIRekHlAiVFVo2DXLiFl7O/YECOK/
+        V7tppfToZ/vz0/MFQ40lttpsittXv358P39Uz8d5ptPL6e7bQeZrdGjnjvopUvUNocMksRe8alDz
+        bOiwlZoillhFn2saz8b3YxVmsvG0mN4VD9MCHVbCRmxY/rz8g5pI3GTtqYOVvs6b4na1oI/utT29
+        NPcL8W9P+/k7LZbokH3b7y2IKXmj1ZGovx+4y4blBW0QSlz5A4GHVlpiAxPYJvK2J6iJungGzzVs
+        CbpESmwTWAaudzkyqUJQvjHwW8kGHaUdVRaEHQS70b8yi4UqcAM98igp1uCTZK7hLHkCa8kJbC+5
+        2Zs62BHFwI264awSq++JCj4R+Bih88lAdgONTh2lQFzRBEZfbY2+049PuzBaEpuPbxSHFl6vvxyq
+        SbdJ5FX4/2SHhtLv3EOx5Byjwzw8s7x8RrcxORArlrOHmUPJ9lV7nF6vfwAAAP//AwCm0CPnKwIA
+        AA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a2dca97e2a-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '59000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:49Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3975'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '459000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_019T7dfrvg5cECWaLjDVedBu
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "True Crime"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRy44TQQz8Fa/3wGUGTbKwSHNB2o0AIbEHiGABoajT7WSa9Nih7c5DUT6BG3d+
+        kU9AMyuk5ehyVblsnzAGbLHX9aKZvOcy+7i+60S+HJffy+2yu3t7uMcK7bilgUWqbk1YYZY0AE41
+        qjk2rLCXQAlb9MmVQPVV/bxWYSarp830WXM9bbBCL2zEhu3X0z9TE0mLooPrGGWoy6KZ3OT7+WTm
+        32zmn1bTz8c40xfzww1WyK4fdK+JKTuj+Z5omB95WwzbE9oItDjPhcDn2BOsHDuLXitIUY0YyvYC
+        /vz+9RNmlHaR1xDZBKwjCC5vQGMgkBV0pXcM7Kxkgs4pMO0ow5KIoZdM4EKI3uKOnsKrLD14SQG8
+        U1IwAaUcXYJNTImyVrCV4J3a2AviS09sLkdSqGHfOXuicJSSYS31kOZR/nh4CR86l+mBkMlL3xMH
+        Z1FYYUlJ9hdwOax8Oyou3x3VaPDG8/lbhWqyXWRyKvz/zceG0o9C7AlbLilVWMY3t6eHoy5MNsSK
+        7dX1tEIp9hibNM35/BcAAP//AwCcj6pDRgIAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a2bf77f9f1-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '60000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:48Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3975'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '460000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01DYE1d2UpwNxKoPR9ezMC5q
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Taylor Swift"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SQTU7DQAyFrzK4CzYJCimEMjta/lSJSqgVCxCKhsQJA1NPyHiIqihX4ARIbLkA
+        F+IEHAElCAmW/vz8/OwWdA4S1q5Mo93p+eJuki2q8tIuqUg0Pz+sjmoIgDcV9ip0TpUIAdTW9EA5
+        px0rYghgbXM0ICEzyucYjsP90Fki5DCO4r0oiSMIILPESAzypv01ZWtN6l3vOkTpa9+HyfjkelGc
+        zuhgPrngRk+PryY5BEBq3c+dIWGtGFcNYr9fU+UZZAs8AAlz71jkta0qzIUShI1wmkqDW2KmaJtF
+        ozSLwtZiY71Qxgi24h5VLTTviK+3l4/P13cxWqmNsfWy0QWL0QKbC+90JkYD0Oig624DcGyrtEbl
+        LP0/aWg4fPJIGYIkb0wAfviibH8yp2wfkRzIcRIHYD3/Zclh130DAAD//wMAwPqC9KQBAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a198cef987-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '62000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:47Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3996'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:29Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '462000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_018XthbnPx15bESdqrdHYLQB
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Travel Destinations"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SRwW4TQQyGX8Uy10m02U2KupdKKFACKkroVqhCaDWddZIhu54w40mJohw49QCo
+        F64oL8Ad3oo8AtqtkODoz/bv3/YObYU5NmFRJoOrx+P0ppjF6zh9TU/51M5MEwkVynZNbRWFoBct
+        8K5ugQ7BBtEsqLBxFdWYo6l1rKiX9Ua94JhJemmSDpOTNEGFxrEQC+Zvd39Fxbm6jKFV7ay0cSyT
+        wfC6qJZcFLPLq/nFq2Y1fp/eTp+hQtZN23dOTF4LFbdE7XzL6yiY71A6kOPYk24sL8DNYeuiB6aP
+        ArraEEv0dAbPyRNoTzCCJgbpbWywAuL1hmqoKIhlLdZxgLnzkCZplsOgD090bRVMuHJMwWo4Hu6/
+        //51D2kfLjWL85atgnNPZAiOh7sfx8PdT8j68HLrxCl4odea4Xj4+gmGfbjQZhlhao1ZRgVT8rEV
+        /NYKjvowMVRrruB4+PIZ3iytWYJjAhvA8cNSN9GsSKC2Qc7gUdGZn3BYW995x/3+ncIgbl160sHx
+        /xfvEoE+RGJDmHOsa4Wxe3K+ezhpKW5FHDDPTjKFLsq/bJCd7vd/AAAA//8DADgxegREAgAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a1abc796e4-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '61000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:48Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3996'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:29Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '461000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01D8Jpgn27xg3UfNhytCMeTX
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Renewable
+      Energy"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet
+      about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1yRQW5TQQyGr+K6i2xe0EtCAno7lBIQlA20UiWEokme+zLpxDOMPXmEKBIHqISE
+        uiZLNhyA83ABcgQ0qZCA5fxj/99ve4u2xgpX0kzLXn/98tWY1ufDJ2Od+MFlw3G0eIQF6iZQriIR
+        0xAWGL3LghGxooYVC1z5mhxWOHcm1dQddIdd8cyk3X7Zf1iO+iUWOPesxIrV2+0fU/XeTZNk12OU
+        /E7TsnfZLifjMDBXL84+3jxuzzbLSXr+AQtks8p9z4gpGqWLlijzLYekWG1Rj0KFr4mpNTNHkCub
+        DVjhjsIyiYIuCK6Tpkg/P91Z7QgsTAjElhtg357AYX/79bC//f7rx+fD/ss3mES/AvHORAiGyQmo
+        h9ZyDZrizDJJAS11IsHCRCaRo5PJhI5A8C1FuPYRDMwdGaZYQBMpB4PgDJM+gHPKOYxzUHvwKYOi
+        ZoykEHxUMFyD5TWJgmWI/48n3iW1nuUETscZ8vReP32TRI1lM7PO6gZ3u3cFivowjWTE8783OH4I
+        vU/Ec8KKk3MFpuPZq+39kqfqb4gFq8FoUKBP+rfWK4e73W8AAAD//wMAWeVxeVYCAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a24c9c1574-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '63000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:46Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3994'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '463000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01KwzsbJPxMTss1sjyzVVWDY
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Artificial
+      Intelligence"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate
+      a tweet about the given topic.", "temperature": 1.0, "tool_choice": {"type":
+      "tool", "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SRQW/bMAyF/wrHHnZxhjRZs9aXIUHrIbceOgTYMASazNhaZdIVqaZpkP9eKMWA
+        7ahHvo8PT0cMLdY4aLedXi6+jJtdc7sa+vb+7sY9cXN91fzBCu0wUtkiVdcRVpgkFsGpBjXHhhUO
+        0lLEGn10uaXJfHI1UWEmm8yms8/TxWyKFXphIzasfx7/Qk0kbrMW6jlKeeft9HITbl9W3/1ytRr9
+        Uu/3XXPz426BFbIbiu8bMSVn9LAnKvcDj9mwPqKdhRqXycIu+OAirNkoxtARe4KgkOhZYrYgHF4D
+        dyA5wV5SbD9Ak2QApbibtCk8l6F3ScEERkoq7GJ4pRYSeRkG4tYVilawXBcwce/YFxftym1ifwDH
+        LajEd5gMY6QXGJP8jjToJ9j0zj4qHEoGc48EwmB9CenG0MYDlKxnr5HvWaJ0h69wsVzDRZMtJ1rr
+        A/keT6dfFarJuE3kVPj/as8DpadcKsCac4wV5vNv1sf37rYmj8SK9Xwxr1Cy/atdz06nNwAAAP//
+        AwB9YQNPLAIAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a24cac2519-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '64000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:45Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3992'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '464000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01RtsEArMu8YKEuY5UptM9Wh
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Space Tourism"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SRz27UQAzGX8W4By7Zajct3ZILWqr+oQgJqQutQCiaJE4y2okdZjwsy2olnoNL
+        X5FHQBNAgqN/tj9/tvdoGyxwCF05X9x8zZ8vvrX5h1Oul7vXN6v3l+biATPU3UipikIwHWGGXlwC
+        JgQb1LBihoM05LDA2pnY0Oxk9mwWhJl0ls/z0/lZPscMa2ElViw+7v+KqogrY0iqk5UUx3K+WFYr
+        u3p4Z6ovby5e3t/dVm+317cBM2QzpL5rYvJGab0lSvMtj1Gx2KNOoMCfjz++w91oagKV6G0YwAZg
+        ASfckYdQW+KaoLW1WuEn8GownWWCYMfRcge1tC0RbHvrCMRXVhO9NF77Y1j3BG3U6Cmp9uQpA8MN
+        WH0aQKKCtKC9DbAV75pjuJfoGthJhEpkAwbU1htSUIGQPL6Ao8nr+o/VoyvLxl15YbXk8XD4lGFQ
+        GUtPJgj/f7gpEehzTAthwdG5DOP0q2L/+zKlyoY4YHFylmcoUf9l58vD4RcAAAD//wMAOIyR3woC
+        AAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a2a9aaed3b-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '65000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:45Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3976'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '465000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01EryPEh2T3YhMnuRwjETi74
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Electric
+      Vehicles"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet
+      about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SRS24TQRCGr1KUtzPR2IPzmB1YlhcoCGETSBAadXqKmVba1UNXtS1j+QxZImWD
+        uAXn4QLkCGgMSLCsr6r+vx57dA1WuJa2Lsazl8v2/Obd7Kwvn8UXz7mj5eLOYoa662moIhHTEmYY
+        gx+AEXGihhUzXIeGPFZovUkN5WU+zSUwk+aTYvK0OJ0UmKENrMSK1fv9X1ENwddJBtXjKEOc6mJ8
+        eXa15evV64vp+I199XazMxfT+TVmyGY99C2IKRql1ZZo8HfcJ8Vqj3oEFT5+ffjy4+Hbz+/3MPdk
+        NToLG+qc9SRgIkGkTfBJXWD32XELGg1LH6KagT2BmSfDFMG4mIEPW4pgg6hkYLgBm1Qdtzk1LYGS
+        7U5g1RF8TJoigROgP6YnMJpfCYyWSdQ4NreeLsOt8053MFpEIl6R7fBw+JChaOjrSEYC/3+aY0Lo
+        UyK2hBUn7zNMx29U+9+71xruiAWr8rTMMCT9l52Xh8MvAAAA//8DAGdr1y/sAQAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a29b0a17da-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:33 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '66000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:44Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3980'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '466000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:33Z'
+      request-id:
+      - req_01TvvKKJV7Y7qoF1SRe3nTT6
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Digital
+      Detox"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet
+      about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRzW7TQBB+lWE49LKJnB9C4wtCBHJoD6gJIIoqa2NP7KXrWdc7i0mjSH0AEAcu
+        cMqxT4DUG+/SFyCPgGyEBMf5Zr4ffbNFk2GMpc+TaDA9fXY9PtHp4+nz14MzWl6fD64WC1Qom4ra
+        K/Je54QKa2dbQHtvvGgWVFi6jCzGmFodMuqNeo963jGT9IbRcBxNhhEqTB0LsWD8bvtXVJyzSfCt
+        ahelnUMSDU5ebHh++n65aI4ns3k+WmUfnvqXqJB12fLmxFRroWVD1PobroJgvEXpgBiXpiRYuxo0
+        PJyZ3Ii2MxL38QEc9l9/wCuubMgVBG4MZwo0Z1BT2kZOBRojBUhBUJO20LjaZn1460INJbFoCwVp
+        KwU0xlqQQvMlbFzowxmVVK6oVmDNmo48rMgLlK5leSh0VRGDW6+tYerDYf/p52F/++3+5vP995tf
+        d1/gTeGOPISqC976p4W2ljinJ7jbXSj04qqkJu0d/19et/B0FYhTwpiDtQpD9694+6edRNwlscd4
+        NBkrdEH+xabHu91vAAAA//8DAAnhUqwOAgAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a1a8e7ce9c-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:34 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '67000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:43Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3995'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:29Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '467000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      request-id:
+      - req_0185AGp77ZPoAaxJKcUMqBom
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Smart Cities"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRy47TUAz9FeNu01Gfg5TdqGKqjoBNiypAqLpN3OQyiZ1e+7YqVb9hFrNiNd/A
+        jr9iPgElAxIsfXx8fI59Rp9jirUWm8Fwvp3M7fhp2nx8P5sd3i7vbuLrLMME7dRQyyJVVxAmGKRq
+        Aafq1RwbJlhLThWmmFUu5tQf96d9FWay/mgwmgyuRwNMMBM2YsP08/mvqIlUm6itamelreNmMFx/
+        m+xdzO7XmVvntVAxfbe8a1ns6nZuTkzBGa2ORO1+z000TM9oHZDisnbBYObNk6awLikQGGUlSyXF
+        CWoiU4hh6xgqf/BcvILnp4fvv34+PD89/oDbIDUsZAVKrBIUTOBm0W/kSIFysOB2O59B7dgVVBNb
+        AlaSEnhmOTjzB4IybhVcIAikpWs8FyAxwC5aDHQFb1oFT5ydEtCo5jy7ra+8nRJwnIOvmyAHymEf
+        XYuC7KDyO+okv0a1diNsqfDMnosr6HWZXyJD70ObbfHHjTD0VpSVtxLmIjleLl8SVJNmE8ip8P+f
+        6BpK+0icEaYcqyrB2D0/Pb+cemNyT6yYjq9HCUq0f7HhYHy5/AYAAP//AwAtENRRXAIAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a1aa36fa12-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:34 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '68000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:43Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3993'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '468000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      request-id:
+      - req_01RY8mpTjcr5u1k2ex5MawJb
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Big Data"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SRTW4TQRCFr1KUF2zGaOI/5NmgJOBIIKFIthIkhEbNTGWmlJ7ucVd1jG35Aizh
+        ADlILpUjoB4Egk1J/frV60+vj8g1FthJU+Zn6+Vifv+uv+zmn/z75eViNr1eHbaYoe57Si4SMQ1h
+        hsHbJBgRFjVOMcPO12SxwMqaWNN4Op6PxTtHOp7kk1m+mOSYYeWdklMsPh//hKr3toySUgeUdI5l
+        fnbzcbZd7W7X693+Q7jZ8fVVK9vXmKEzXdq7IkfBKG12ROl9dn1ULI6og1DgBTfw1qgBFgj04G1U
+        9o4P7BpgV0fRwCQv4Pnx5/fnxx9PsAq+gz5QzZXyA4Fxxu6VKwH10FMQ74zlA9VA33oKTK4iyYD1
+        pYC0pk/BPgaouWE1Fu6ixkCv4DwQ7H2E1gRHIsmmLUHvdxTA30E9QLrkCfA1CifXGxhdcDPwj9I8
+        /wsz2lDVbgK5WvB0+pKhqO/LQEa8+7/P4UJoGxMpFi5am2EcvrA4/i6sVH9PTrCYLiYZ+qj/asv8
+        dPoFAAD//wMAkxbRiCECAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a239baed41-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:34 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '69000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:42Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3995'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '469000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      request-id:
+      - req_01FxdLJwRg6UsiuZGaAHtYmw
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Yoga"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//VFFBblNBDL2K5Sy6mVS/aUjbvyMRdJNuqqIKKvQ1/eOmk07sdOwpfKJI
+        vQBiCyuWXIHz9AJwBPRTIcHSz/Z7z88bjAFrXOmiqQ7edBfzWZ7OR/7dbHk+OT2X5f3LE3Ro3Zr6
+        KVL1C0KHWVIPeNWo5tnQ4UoCJayxTb4EGh4OXwxVmMmGo2o0riajCh22wkZsWF9t/pKaSGqK9qw7
+        K31dmurg9ScRO6P5uBu/unyYHT3cnYQc0SH7Vb93SkzZG118IOr1I6+LYb1B2wE1TjN5uyUHapms
+        vXXgOcBN5ACdlAyRmTKsybe0D7+///j69Pj56dvjr59f4K0sPETlPYNlUQP6SLmNSg6i7Sl4WErJ
+        TB2YwLVPnluCVeTg4FpC9yykUtI+DHqqebwhGFxSSkyqMDiLHKYSulmfT2tRGLfb9w7VZN1k8ir8
+        fzC7htJ9IW4Jay4pOSy7X9Sb58sbkztixfpwMnIoxf7Fjo+22z8AAAD//wMAsrYnjOoBAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a279c6ed3d-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:34 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '70000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:41Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3981'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '470000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      request-id:
+      - req_01KngjAWRKgpv9FH6aXVPJ4o
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Minimalism"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SQz07CQBDGX2UzXAtpC4L2aCJ6QOP/IMY0SzvAhu4udmaRhpDwAsarJiYe9RF8
+        Hl5AH8G0xqjH+c0333wzS1ApRKBpHPtBR6ZpcHrRPAiDy76k+XYrLK4G4AEXMyxVSCTHCB7kNiuB
+        JFLE0jB4oG2KGUSQZNKlWG/Wt+pkjUGuh37Y8tuhDx4k1jAahuh6+WPK1maxo9K1ilLWLvaDo8W8
+        Owp3eie73M1HwaKfDKbHE/DASF3O7aPBXDKe3yGW+5WZOYZoCVyBCHpIJBQJbXNsiD09zGWCQiuj
+        tMwUaSFNKlJFiZ1jLniCYojScSGUEaT0LFOJ4qIhPl9eHzfr+83T+uP9YfP8JmqHvx61s1KJPTVC
+        WK1uPCC2szhHSdb8P65qEN46NAlCZFyWeeCqf0bL7/Qx2ykagqjZbnpgHf9l7c5q9QUAAP//AwCA
+        hRDlrgEAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a27e08ebe2-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:34 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '71000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:41Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3985'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '471000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      request-id:
+      - req_01KhwysvuUEd21zWb8ZBxLcn
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Climate
+      Change"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet
+      about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SSX24TMRDGrzJMH3jZVJsEKti3UiGi8kBpEZWKUOTufnFM1+PFHjdto9ygiCNU
+        3IJb0SMgJyDBoz/PfL/5t2bXccM+2Xk9fmH9zen57G4Z0snrmR4e+3w7LLlivR1QopCSseCKY+iL
+        YFJySY0oV+xDh54bbnuTO4ymo+ejFESgo0k9eVYfTGquuA2iEOXm0/qvqYbQz3MqrttSyjvP6/GZ
+        P3KrC/v+6tXbl8eQvIqzj4sLrliML3lvIIhG8WEFFL6TISs3a9at0PDjw/03OuqdNwpql0YsyCWK
+        MH1FRjpy+jSROg/SQKbVJ/T4cP/j18/vdOqSE0sKPxRGjkgV4UYjPGgFo0vEnYdHryXUtaDWDIlM
+        BH3JSUmXoEtYJ+LE7tM5SICOcrQQLTgXpIAjutyC4F1KLkiqyMk1kpITihCszGUPKs3a2x1ziEHR
+        KoUcaeiNQGkRIi1yKZTsbi7Fap/2/vR/uMPtnZlrvMvxZJvFm83nipOGYR5hUpD/t7H9SPiaIS24
+        kdz3FeftATTr3bjnGq4giZvpwaTikPVfbVxPN5vfAAAA//8DAJ3jFRpgAgAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a2896d159e-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:34 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '72000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:40Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3983'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '472000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      request-id:
+      - req_01K3qhxZqXG9P6xJFUTTcUgv
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Upcycling"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SRz24TQQzGX8W410m1SUmhe6lEKRGocOgfCkVoNdk1uxMmnu3Yk2gb5Q2QOHPi
+        NZA48C68ADxCtVuK4Oif/dmf7Q26CnNcSl1k42dpenRyerwYO7t+0caLJ68WfNCgQe1a6qtIxNaE
+        BmPwPbAiTtSyosFlqMhjjqW3qaLR3mg6ksBMOppkk4fZ/iRDg2VgJVbM323um2oIvkjSdx2s9HEq
+        svHjq+Obq9lRNatentU3cnpw/bqMb9Ag22WvmxFTtErna6J+vuM2KeYb1AHk+Pvrpx8/v3z/9e0z
+        XLRlV3rHdQ6XDUUCjVYamFMZliSgkaykSA/gPEWG4CtY2CjgWAO03rJSFAOt9Z70D/6QIjtNkQxY
+        rkBH0rh4n9SgBHNbyy7MSKGMZNWtyIDYFcEyMHV3soZ8C9rQMIV0Fy4bq7B23kMXEqTBN4GGynaH
+        sPN3D9g5S6LWsZ17OnGrAT19/ha32/cGRUNb9DsF/v/AQ0LoOhGXhDkn7w2m4af55u6ChYaPxIL5
+        3v7UYEj6Lxtnj7bbWwAAAP//AwCXzSaaMwIAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a18822175f-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:34 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '73000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:39Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3998'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:29Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '473000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      request-id:
+      - req_01BgAqepB9nZPLaqwHu7wRxj
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Internet
+      of Things"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet
+      about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRUW7TQBC9yjD5ACQHOUlTwD+oKiWK4KO0loyEkLW1J/YWe8bsziY1Uc7ABwco
+        V+BmPQLaoErw+d7MvPdmZo+2xgx735TpbHl+eaMXvvjw9vrTcrbcDEU9jIoJ6jhQ7CLvTUOYoJMu
+        EsZ769Vw7Omlpg4zrDoTapoupsupF2bS6Tydn6Sn8xQTrISVWDH7vH8UVZGuDD6qHqNEHMp0dnb7
+        +vJjYS/u+H24Wl3xWb/iE4MJsunj3IqYnFHKd0TR3/IQFLM96pHIMG8J1qzkmBRkA3lrufHwbC35
+        c7AeHG2lC2qF7XfLDUhwsBPX1U/gnZMefG+cQis9eVCBKi5TKdVQWbXkE6AtubE2I8jNLVXqwTgC
+        lh0Id5bpBTzc//j1cP/zNxSt0acexmixMVtxVgnWkkNNW1vRG5hEMLmOjjlVLUsnzQiT80fPIubC
+        w+FLgl5lKB0ZL/z/9Y4FT98CcUWYcei6BMPxYdn+73lKla/EHrPF6SJBCfov9+rl4fAHAAD//wMA
+        pHmlGQ8CAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a2ae3acf76-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:34 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '74000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:38Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3979'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '474000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      request-id:
+      - req_01FUq8YChsAUiJPaPdkrW6iV
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Movies"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRS44TQQy9isezYNNBnQ8h0xs0LDJoRFiQQSOBUOTpdrpLVLmasivREOUKcwUu
+        wOE4AuoeIcHSz8/Pz88ndA1WGLTdldO75kP6MV3chv2mXTXvbz6vruTdJyzQHnseWKxKLWOBKfoB
+        IFWnRmJYYIgNe6yw9pQbnswnryYaRdgms3K2KJezEgusoxiLYfXl9FfUYvS7rIPqaGWo866crm/f
+        Pizvr69D2H7cx9fz1XGbwwwLFArD3A0LJzK+OzIP+5302bA6oY1Ahb9/Pv2CTTw4Bh8PnPQC7juy
+        FwrWMXhSg73zAawjA897g8eYQXvmuvOs+gbWKQYITprJA0vjpIXeR1OwCGpZZEAOTjN5LaB2woGg
+        o2f9Ph45DUxLJNrHZJD1JWw7SjwsSpC4ZjHY0yEmZwwkDXge/KlRMiAIo/lAiayLAkennXdqF3A5
+        nrWh1tVwuXY+rEnIXK14Pn8tUC32u8SkUf4PeGwof88sNWMl2fsC8/jT6vSc4M7iNxbFar6cFhiz
+        /YtdLc7nPwAAAP//AwBnoU1KMgIAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a1bbb77e2a-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:34 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '75000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:38Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3993'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '475000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      request-id:
+      - req_012YaYpKNiSsU5bjyxm5KNhd
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Plant-based
+      Diets"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet
+      about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SRUW7TQBCGrzJMHnhxkOs0FvgFtaihqH1ALWoECFlre+IsWc+4u7ONoig34A6c
+        oTfjCGiNkOBxvpn5/18zR7QdVjiEvs7PLvpVuT+3r+nucVVcFk15s1t8vsMM9TBSmqIQTE+YoReX
+        gAnBBjWsmOEgHTmssHUmdjRfzJfzIMyk8yIvzvOyyDHDVliJFauvx7+iKuLqGJLqFCXVsc7PbrqL
+        sVl+WT5cr9e3vF7LO99JjxmyGdLee2LyRunTnij5Wx6jYnVEnUCFv37+eIarofGmtdyDgdEZ1nlj
+        AnXQWdK38EFfBmBR+B6Dgnri7pCBTVS94bARPxi1T/QCVl4GaESCJrEtGadbUIEtuTER3dJkQJpB
+        L4n0nohBGA4SfeopQWsYBrMjMLAX7zqQDXR2syFP3NIrmH1MGS+niLPryeRwZSbL2X0MaiybxtGt
+        fbLc4+n0LcOgMtaeTBD+/5pTI9BjTNJYcXQuwzg9sDr+OVetsiMOWC3KMkOJ+i97U55OvwEAAP//
+        AwB8PVCUHwIAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a2afbffa6a-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:34 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '76000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:37Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3977'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '476000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      request-id:
+      - req_01MFbz9zYq6cMgHYBVJBCUoK
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Technology
+      Trends"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet
+      about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRzW4TQQx+FeNcZ1F+aJXsBfWSqFJBhUYQilA0zDrZETue7djTNIoi8RxceEUe
+        Ac0WJDj6s/392Cf0DdYYZL8dT+Yb3c0/LRfv78INrWfhcTm/Pb5Dg3rsqUyRiN0TGkyxK4AV8aKW
+        FQ2G2FCHNbrO5oaqWXVRSWQmrabj6avx5XSMBl1kJVasP5/+kmqM3TZLYR2slDpvx5PVG7q/vdvc
+        82aSdyE4vWmfPrxFg2xD2VsRU7JK6wNR0ffcZ8X6hDoANf76+eM7rMm1sE7EjcBVR0lruLo2cLEy
+        YLmBh2xZcwAXQ5/V8x5sIkgkre1LFXOCQ0xd8wKWKQaQYJNSAufVk4BG6Py+Vfa8r3ZWFFyJ7NRH
+        lkEgeG6qr8RNYXtWsaVrO+jjgZIBbQl2WXMi8AIcDy/hY+tdC1pcAz05ryRwjBlCFH0No5LpT6TR
+        ctgcUo6umePjwI7n8xeDorHfJrIS+f87Dw2hh0zsCGvOXWcwD6+tT8+H3Gr8RixYzy5nBmPWf7HF
+        4nz+DQAA//8DAMsEGno5AgAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a239c496ad-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:34 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '77000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:36Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3990'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '477000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      request-id:
+      - req_01Kme7E4y6CpoGwdPJQBRZKC
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Cloud Computing"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RRQW4TUQy9iuss2ExQkpJWnW3KIAQrEkWoCEXOjGfy6Z/v4ds/aYiy6AnYchTO
+        0wv0CmgGgWBnP9vvPT2f0FWYY6vNZjK91cLquLier+++HMobpvXi3VIxQzt23G+xKjWMGUbxPUCq
+        To2CYYatVOwxx9JTqnh8OZ6PVUJgG88ms1eTq9kEMywlGAfD/NPpD6mJ+E3SnnWw0vdpM5ku5tcf
+        D/RhXSyL3fS9NsVd/SB7zDBQ29+94cCRjFcH5l7fhS4Z5ie0Acjx6cfj88/v8LrdRipdaMB2DHWy
+        FBkOznaw8JIqWEjbJXOhuYBlSZ62njOoPT+4oaJQQSlqY65rLs3tGVR8MidBoZYI26QusCorSA3k
+        Paj7xvoSiigtVGQEahKpYTCBTg4c6+SBAvmjuVKzwZfeH1/oUHnXOruA0eDurzkYrbjcvQ1B9tRr
+        w+jWNc7IryIFrSW2A4zn8+cM1aTbRCaV8H/Aw0D5a+JQMuYheZ9hGn6an34nuDG556CYX17NMpRk
+        /2I30/P5FwAAAP//AwCK9KOAMgIAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a27ec8252d-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:34 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '78000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:36Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3990'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '478000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      request-id:
+      - req_01RDZrDAuBLbm4XekLwX1AU4
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Environmental
+      Conservation"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate
+      a tweet about the given topic.", "temperature": 1.0, "tool_choice": {"type":
+      "tool", "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAAwAAAP//VFFRahtBDL2Kqnz0Zzd4bdel+1NoaA2tQ2KSEGgpZrIj20tmpe1IY2cx
+        vkF7hl4xRyjjUGi/hJ6k96SnA7Yea+x0sxpVd18+TTfV08VwPZ4OH6Z9Nal4WWGBNvSUu0jVbQgL
+        jBIy4FRbNceGBXbiKWCNTXDJUzkp35QqzGTleDSejmbjERbYCBuxYf3t8JfURMIqaWY9rZLztBpV
+        l/eL3dfpfBaX7mH5+fK2f3pYbLMQuy7PzYkpOqPbPVGGW+6TYX1AOwE1Pv/++Qs+8q6Nwh2xuQAX
+        wkpx56wVruEqReiDYzJgIq+QFFj20EkksK1joB3FV7Age62wl/gIJhuyLUUwgT6KUWMgKcJaIqlp
+        AdKQYy3AsYd9G3xo13QON50LAVyTdRWc95B6KCGSTw0VECnpKTRDE+gc7rcuKw6ZmRop17El9mGA
+        jbiQtcDEu+E9nN24HV2leP1yxdlc5pGI8Xj8XqCa9KtIToX/t/lUUPqRiBvCmlMIBabTZ+vDi48r
+        k0dixXoyGxcoyf7F3r09Hv8AAAD//wMA4lUZzzgCAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a19c7a645f-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:34 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '79000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:35Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3997'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:29Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '479000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:34Z'
+      request-id:
+      - req_01DBhS9zWTLCse4M8kCoXpgF
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Genetic
+      Engineering"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a
+      tweet about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SSz24TQQzGX8U4By6bKv9oxV4QSA0Sf1VKFFGEoumsd3fIxt6sPYQoyltw75FL
+        H66PgGYDAo7zzc+fP8/4gKHAHDdarUbjuXtd18vi5u1yHsoPN+XV8vn1xQ4ztH1LiSJVVxFm2EmT
+        BKca1BwbZriRghrM0TcuFjScDp8MVZjJhpPRZDY6n4wwQy9sxIb558MfUxNpVlGTax8lneNqNF5c
+        zWa83Xz7tHg3rtp2P331hr8+xQzZbVLdS2LqnNHHHVHqH7iNhvkBrRdyfLj7ef9w9+MeEmnBA3EV
+        mKgLXOWw4Eb8OnAFVhN4KQikhCaU9AjmnWzAxwRCEZSckoIJENeOfVJ9J61mYHVQ8NEscDWkoiJQ
+        H4g9QVDoSGvXJlpiB2W02NEZXH73IeHQimq4DU2wQJrBbTQgq4N3DWwjqQVhBdcFpTNY1s4eK+yT
+        kbk1gfCpdys76srYgJGvWRqp9s9g8Hvgy7/zwuBFkMTAYN4HeV9en5Li8fglQzVpVx05Ff7/S/oL
+        pW3s2Zxj02QY+y3ID6c3X5msiRXz6fk0Q4n2rzYeXRyPvwAAAP//AwD5rF1KZQIAAA==
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a22c021746-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:35 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:35Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '80000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:35Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3992'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '480000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:35Z'
+      request-id:
+      - req_01G6WB7piv7pzv6jwz53W7HC
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Fashion"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SRzW4TUQyFX8U420mVn1LK7FpQs+NHHQmkCkXujJO5zR07vfZNmkZ5kW7Y8ng8
+        AppBIFj62Mf+dHzE0GCJna2Xk2mlH/ZPb6r8Jefb7mbxNL0K80vDAv2w5X6KzWjNWGDS2AtkFsxJ
+        HAvstOGIJdaRcsPj+fj12FSEfTybzM4nF7MJFlirOItjeXf8s9RV4zJbv3VA6evcw3xt3ldOjxt7
+        t6CrqX6+b6y7xgKFut63YOFEztWeub8fZJsdyyP6IJRYJZYGKHLyV/Dz+8sP+LjjZOGZG7iP9MzJ
+        gBJDS7sgayDo6EETdNqxOHgbDIzJVM7gE4UE++AtWGTegCfN1vs1wUFzghXtNAVneGASg5UmIAFe
+        rTR5ZLN4gLoNNUTVzRmMbsjaoDIQGoz+cl0PWDC69UPkKmwNT6dvBZrrdpkGlv8DGxrGj5mlZiwl
+        x1hgHn5UHn8nsnTdsBiW84tpgZr9X+3t+en0CwAA//8DAIf08YECAgAA
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a2ae1815d6-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:35 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:35Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '80000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:35Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3975'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '480000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:35Z'
+      request-id:
+      - req_015HbpHDP2LmrMJtUPJqoyMj
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Rewilding"}],
+      "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet about the
+      given topic.", "temperature": 1.0, "tool_choice": {"type": "tool", "name": "GenerateTweet"},
+      "tools": [{"name": "GenerateTweet", "description": "Submit your tweet.", "input_schema":
+      {"type": "object", "properties": {"tweet": {"type": "string", "description":
+      "The generated tweet."}}, "required": ["tweet"]}}], "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1SRX24TQQzGr2Kch75sqs2fFrGPVFVFpaI0ShECodUw6+yOOjtOxp6EEOUGfeAG
+        vUl7pR4BTSoQPPpn+/Onz3t0DVbYS1uXo6tZ/66fnV3crq8/3X35YXl2284FC9TdivIUiZiWsMDI
+        PgMj4kRNUCyw54Y8Vmi9SQ0NJ8OzoXAIpMNxOZ6W5+MSC7QclIJi9XX/R1SZfZ0kqx6t5DrV5eha
+        PtN8PVmGu5+pm0+2m8Xb9mKBBQbT570rChSN0mJLlO+7sEqK1R71CCp8eXx4hjltnW9caCv4aDRF
+        OhGw3NN3Y+9BlOPuDbw8/nqCOeXKhRbIsuxEqZcCIrmgkZtkc0dWZB1JASY04Ek1wxvWjiJcmqgd
+        dGQ8dBSF/PIUPuiJgLqeQBlatyHIZrxbEkTmPtPIpj/KaRfdhk5h8NcxDN47btyGojjd3RhVigKD
+        S8ueW2eNf7Vs1HHAw+FbgaK8qiMZ4fB/sMeG0DpRsIRVSN4XmI6/rPavydXK9xQEq8n5tEBO+i8b
+        ldPD4TcAAAD//wMAPpAOyisCAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a27bb9ce98-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:35 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:35Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '80000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:35Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3989'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '480000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:35Z'
+      request-id:
+      - req_0121CQ4fDWfGhwPUJ7aDGMRQ
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+- request:
+    body: '{"max_tokens": 1024, "messages": [{"role": "user", "content": "Food and
+      Cooking"}], "model": "claude-3-5-sonnet-20240620", "system": "Generate a tweet
+      about the given topic.", "temperature": 1.0, "tool_choice": {"type": "tool",
+      "name": "GenerateTweet"}, "tools": [{"name": "GenerateTweet", "description":
+      "Submit your tweet.", "input_schema": {"type": "object", "properties": {"tweet":
+      {"type": "string", "description": "The generated tweet."}}, "required": ["tweet"]}}],
+      "top_k": -1, "top_p": 1.0}'
+    headers: {}
+    method: POST
+    uri: https://api.anthropic.com/v1/messages
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAAA1RR3W7TUAx+FeNdcJOitNvKyA0CVIbUcYOQ9oNQ5Z44zSEnPumxs5JVfQSegYfg
+        xXgElG5IcGd/n/35s71HX2KBrW5W+XRaT+3lrXv18ds2bT9d3TyU693tEjO0oeOxilVpw5hhimEE
+        SNWrkRhm2MaSAxboAvUlT04n5xONImyTWT47y+ezHDN0UYzFsPiy/ytqMYZVr6Pq0cqY96t8evH2
+        Lt0tlzu32w43m7VdzBeL60vMUKgd+y5ZOJHx5x3zON9L1xsWe7QjUODvnz9+wbsYGy8bMN9BrMBq
+        hpKGAhaB78kYhtgnKL3WrLAegL93nHzLYmPTzlsNNae1AkkJ2nnH+gzeQOfF1aOetrHhEjrqkm8I
+        YgIC7ZKXJvDIV4m1hjWpD+BIwBKJVjG1QAIxlV4oDdAyBfBiEQhcH55AUuPUeXb8Aq5rsuf66Lai
+        +5i8MVRhjIClJnGcXsPJ07YfyDUKJ+9jLD1f+YrxcPiaoVrsVolJo/x/9yOhvO1ZHGMhfQgZ9sdX
+        F/vHw64sNiyKxen8LMPY27/YND8/HP4AAAD//wMArB0LdUoCAAA=
+    headers:
+      CF-Cache-Status:
+      - DYNAMIC
+      CF-RAY:
+      - 8f0179a29b57cf93-SJC
+      Connection:
+      - keep-alive
+      Content-Encoding:
+      - gzip
+      Content-Type:
+      - application/json
+      Date:
+      - Wed, 11 Dec 2024 00:49:39 GMT
+      Server:
+      - cloudflare
+      Transfer-Encoding:
+      - chunked
+      X-Robots-Tag:
+      - none
+      anthropic-ratelimit-input-tokens-limit:
+      - '400000'
+      anthropic-ratelimit-input-tokens-remaining:
+      - '400000'
+      anthropic-ratelimit-input-tokens-reset:
+      - '2024-12-11T00:49:39Z'
+      anthropic-ratelimit-output-tokens-limit:
+      - '80000'
+      anthropic-ratelimit-output-tokens-remaining:
+      - '80000'
+      anthropic-ratelimit-output-tokens-reset:
+      - '2024-12-11T00:49:39Z'
+      anthropic-ratelimit-requests-limit:
+      - '4000'
+      anthropic-ratelimit-requests-remaining:
+      - '3978'
+      anthropic-ratelimit-requests-reset:
+      - '2024-12-11T00:49:30Z'
+      anthropic-ratelimit-tokens-limit:
+      - '480000'
+      anthropic-ratelimit-tokens-remaining:
+      - '480000'
+      anthropic-ratelimit-tokens-reset:
+      - '2024-12-11T00:49:39Z'
+      request-id:
+      - req_0134P53Uj4V1381bBf59g9wM
+      via:
+      - 1.1 google
+    status:
+      code: 200
+      message: OK
+version: 1

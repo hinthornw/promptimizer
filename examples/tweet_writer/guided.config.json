@@ -1,0 +1,21 @@
+{
+  "name": "Tweet Generator",
+  "dataset": "tweet-optim",
+  "evaluators": "./task.py:evaluators",
+  "optimizer": {
+    "kind": "feedback_guided",
+    "model": {
+      "model": "claude-3-5-sonnet-20241022",
+      "max_tokens_to_sample": 8192
+    },
+    "max_batch_size": 10
+  },
+  "initial_prompt": {
+    "identifier": "tweet-generator-example:starter"
+  },
+  "evaluator_descriptions": {
+    "under_180_chars": "Checks if the tweet is under 180 characters. 1 if true, 0 if false.",
+    "no_hashtags": "Checks if the tweet contains no hashtags. 1 if true, 0 if false.",
+    "multiline": "Fails if the tweet is not multiple lines. 1 if true, 0 if false. 0 is bad."
+  }
+}

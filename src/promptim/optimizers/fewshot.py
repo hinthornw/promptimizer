@@ -46,18 +46,4 @@ class FewShotOptimizer(optimizers.BaseOptimizer):
         task: pm_types.Task,
         other_attempts: List[pm_types.PromptWrapper],
     ) -> pm_types.PromptWrapper:
-        # 1. Use the few_shot_selector to pick examples
-        few_shots = self.few_shot_selector(results, task)
-
-        # 2. Insert these examples into the prompt:
-        #    For simplicity, assume the prompt has a <FEW_SHOT_EXAMPLES> placeholder
-        current_str = current_prompt.get_prompt_str()
-        improved_str = current_str.replace("<FEW_SHOT_EXAMPLES>", few_shots)
-
-        candidate = pm_types.PromptWrapper.from_prior(current_prompt, improved_str)
-        pm_utils.print_rich_diff(
-            current_prompt.get_prompt_str_in_context(),
-            candidate.get_prompt_str_in_context(),
-            "Updated Prompt with Few-Shot Examples",
-        )
-        return candidate
+        raise NotImplementedError("The few-shot optimizer is not yet implemented.")

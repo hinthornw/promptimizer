@@ -655,13 +655,11 @@ class PromptTrainer:
         )
         now = datetime.datetime.now(datetime.timezone.utc)
         # Temporary: permit run ingestion to extend existing experiment
-        asyncio.create_task(
-            _queue(
-                self,
-                self.client.update_project,
-                project_id=results._manager._experiment.id,
-                end_time=now + datetime.timedelta(days=999),
-            )
+        await _queue(
+            self,
+            self.client.update_project,
+            project_id=results._manager._experiment.id,
+            end_time=now + datetime.timedelta(days=999),
         )
         return [r async for r in results]
 

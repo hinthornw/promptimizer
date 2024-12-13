@@ -871,7 +871,7 @@ wheels = [
 
 [[package]]
 name = "promptim"
-version = "0.0.7"
+version = "0.0.8rc1"
 source = { editable = "." }
 dependencies = [
     { name = "click" },

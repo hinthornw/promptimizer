@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from promptim import types as pm_types
 from promptim.trainer import PromptTrainer
+from langchain_core.language_models import BaseChatModel
 
 
 @dataclass
@@ -27,8 +28,11 @@ class BaseAlgorithm(Generic[C], ABC):
 
     config_cls = AlgorithmConfig
 
-    def __init__(self, config: Optional[Union[dict, AlgorithmConfig]] = None):
+    def __init__(
+        self, config: Optional[Union[dict, AlgorithmConfig]], model: BaseChatModel
+    ):
         self.config = self._resolve_config(config or {})
+        self.model = model
 
     def _resolve_config(self, config: Union[dict, AlgorithmConfig]) -> AlgorithmConfig:
         if isinstance(config, dict):

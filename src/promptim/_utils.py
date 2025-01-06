@@ -4,6 +4,9 @@ from difflib import SequenceMatcher
 from rich import print as richprint
 from rich.panel import Panel
 
+import re
+import uuid
+
 
 def _colorize_diff(diff):
     for op, i1, i2, j1, j2 in diff.get_opcodes():
@@ -24,3 +27,37 @@ def print_rich_diff(original: str, updated: str, title: str = "") -> None:
         colorized_diff, title=title or "Prompt Diff", expand=False, border_style="bold"
     )
     richprint(panel)
+
+
+def get_var_healer(vars: set[str], all_required: bool = False):
+    var_to_uuid = {f"{{{v}}}": uuid.uuid4().hex for v in vars}
+    uuid_to_var = {v: k for k, v in var_to_uuid.items()}
+
+    def escape(input_string: str) -> str:
+        return re.sub(r"([{}])", r"\1\1", input_string, flags=re.DOTALL)
+
+    if not vars:
+        return escape
+
+    mask_pattern = re.compile("|".join(map(re.escape, var_to_uuid.keys())))
+    unmask_pattern = re.compile("|".join(map(re.escape, var_to_uuid.values())))
+
+    def assert_all_required(input_string: str) -> str:
+        if not all_required:
+            return input_string
+        missing = [var for var in vars if f"{{{var}}}" not in input_string]
+        if missing:
+            raise ValueError(f"Missing required variable: {', '.join(missing)}")
+
+        return input_string
+
+    def mask(input_string: str) -> str:
+        return mask_pattern.sub(lambda m: var_to_uuid[m.group(0)], input_string)
+
+    def unmask(input_string: str) -> str:
+        return unmask_pattern.sub(lambda m: uuid_to_var[m.group(0)], input_string)
+
+    def pipe(input_string: str) -> str:
+        return unmask(escape(mask(assert_all_required(input_string))))
+
+    return pipe

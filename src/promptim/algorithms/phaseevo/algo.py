@@ -13,7 +13,7 @@ def default_curriculum():
     return [
         mutations.ensure_phase_config(config)
         for config in [
-            {"mutation": "lamarckian", "max_attempts": 1, "population_size": 5},
+            {"mutation": "lamarckian", "max_attempts": 1, "population_size": 15},
             {"mutation": "gradient", "max_attempts": 1},
             {"mutation": "eda-index"},
             {"mutation": "crossover-distinct"},
@@ -65,7 +65,7 @@ class PhaseEvoAlgorithm(BaseAlgorithm[EvolutionaryConfig]):
             raise ValueError("baseline_experiment_results is required")
 
         config = cast(EvolutionaryConfig, self.config)
-        phases = [PhaseRunner(phase) for phase in config.phases]
+        phases = [PhaseRunner(phase, self.model) for phase in config.phases]
 
         # The initial population stuff is wrong; assumes single
         population = [
@@ -88,7 +88,9 @@ class PhaseEvoAlgorithm(BaseAlgorithm[EvolutionaryConfig]):
 
 class PhaseRunner:
     def __init__(
-        self, phase: mutations.PhaseConfig, model: optimizers.MODEL_TYPE | None = None
+        self,
+        phase: mutations.PhaseConfig,
+        model: optimizers.MODEL_TYPE,
     ):
         self.phase = phase
         self.mutation = mutations.load_mutation(phase, model=model)
@@ -124,10 +126,9 @@ class PhaseRunner:
             retained = sorted(
                 retained + candidate_variants, key=lambda v: v.fitness, reverse=True
             )[: self.phase["population_size"]]
-            improvement = sum(v.fitness - starting_fitness for v in retained) / len(
-                retained
-            )
+            improvement = (
+                sum(v.fitness - starting_fitness for v in retained) / len(retained)
+            ) / starting_fitness - 1.0
             if improvement > self.phase["improvement_threshold"]:
                 break
-
         return retained

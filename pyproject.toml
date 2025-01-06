@@ -16,6 +16,7 @@ dependencies = [
     "pandas>=0.2.4",
     "rich",
     "python-dotenv>=1.0.1",
+    "trustcall>=0.0.26",
 ]
 
 [project.scripts]

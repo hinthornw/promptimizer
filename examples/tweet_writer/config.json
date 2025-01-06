@@ -2,10 +2,12 @@
   "name": "Tweet Generator",
   "dataset": "tweet-optim",
   "evaluators": "./task.py:evaluators",
+  "algorithm": {
+    "kind": "phaseevo"
+  },
   "optimizer": {
     "model": {
-      "model": "claude-3-5-sonnet-20241022",
-      "max_tokens_to_sample": 8192
+      "model": "openai:gpt-4o-mini"
     }
   },
   "initial_prompt": {

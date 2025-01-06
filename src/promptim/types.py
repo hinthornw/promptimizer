@@ -1,7 +1,7 @@
 import copy
 import json
 from dataclasses import dataclass, field, fields
-from typing import Callable, Optional
+from typing import Callable, Optional, Any, Protocol
 import uuid
 from uuid import UUID
 
@@ -14,7 +14,8 @@ from langchain_core.prompts.structured import StructuredPrompt
 from langchain_core.runnables import RunnableBinding, RunnableSequence
 from langsmith.schemas import Example, Run
 from langsmith.utils import LangSmithConflictError
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
+from promptim._utils import get_var_healer
 
 DEFAULT_PROMPT_MODEL_CONFIG = {"model": "claude-3-5-haiku-20241022"}
 DEFAULT_OPTIMIZER_MODEL_CONFIG = {
@@ -145,6 +146,10 @@ class PromptWrapper(PromptConfig):
                 f"Unsupported message template format. {msg}"
             ) from e
 
+    def required_variables(self) -> set[str]:
+        tmpl = self.load()
+        return set(tmpl.messages[self.which].input_variables)
+
     def get_prompt_str_in_context(self, client: ls.Client | None = None) -> str:
         tmpl = self.load(client)
         formatted = []
@@ -272,7 +277,8 @@ class Task(TaskLike):
     @staticmethod
     def get_prompt_system(prompt_wrapper: PromptWrapper):
         async def prompt_system(prompt: ChatPromptTemplate, inputs: dict):
-            return await prompt_wrapper._postlude.ainvoke(prompt.invoke(inputs))
+            formatted = prompt.invoke(inputs)
+            return await prompt_wrapper._postlude.ainvoke(formatted)
 
         return prompt_system
 
@@ -285,13 +291,43 @@ class Task(TaskLike):
         return self.get_prompt_system(prompt)
 
 
-class OptimizedPromptOutput(BaseModel):
-    """Schema for the optimized prompt output."""
+class OptimizedPromptOutput(Protocol):
+    analysis: str
+    improved_prompt: str
 
-    analysis: str = Field(
-        description="First, analyze the current results and plan improvements to reconcile them."
-    )
-    improved_prompt: str = Field(description="The improved prompt text")
+
+def prompt_schema(og_prompt: PromptWrapper) -> type[OptimizedPromptOutput]:
+    required_variables = og_prompt.required_variables()
+    if required_variables:
+        variables_str = ", ".join(f"{{{var}}}" for var in required_variables)
+        prompt_description = (
+            " Must retain all of the following f-string variables from the "
+            f"original prompt: {variables_str}. No other input variables are "
+            "allowed."
+        )
+    else:
+        prompt_description = "No input variables are required."
+
+    pipeline = get_var_healer(set(required_variables), all_required=True)
+
+    class OptimizedPromptOutput(BaseModel):
+        """Schema for the optimized prompt output."""
+
+        analysis: str = Field(
+            description="First, analyze the current results and plan improvements to reconcile them."
+        )
+        improved_prompt: str = Field(
+            description=f"The improved prompt text in f-string format.{prompt_description}"
+        )
+
+        @model_validator(mode="before")
+        @classmethod
+        def validate_input_variables(cls, data: Any) -> Any:
+            assert "improved_prompt" in data
+            data["improved_prompt"] = pipeline(data["improved_prompt"])
+            return data
+
+    return OptimizedPromptOutput
 
 
 def _ensure_stricty(tools: list) -> list:

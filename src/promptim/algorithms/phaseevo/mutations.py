@@ -1,13 +1,14 @@
 from abc import abstractmethod
 import promptim.types as pm_types
 from collections import deque
-from typing import Optional, Literal, TypedDict
+from typing import Optional, Literal, TypedDict, cast
 from promptim.optimizers import base as optimizers
 from langsmith.evaluation._arunner import ExperimentResultRow
 from promptim import _utils as pm_utils
 import asyncio
 import random
 import langsmith as ls
+from trustcall import create_extractor
 
 
 class Variant:
@@ -32,7 +33,7 @@ class Variant:
             )
         ]
         defined_scores = [
-            eval_result.core for eval_result in rows if eval_result.score is not None
+            eval_result.score for eval_result in rows if eval_result.score is not None
         ]
         fitness = sum(defined_scores) / len(defined_scores)
         self.prompt = prompt
@@ -51,6 +52,9 @@ class Variant:
 
 
 class Mutation(optimizers.BaseMutator):
+    def __init__(self, *, model: optimizers.MODEL_TYPE, **kwargs):
+        super().__init__(model=model)
+
     @abstractmethod
     async def mutate(
         self, population: list[Variant], train_examples: list[pm_types.Example]
@@ -93,6 +97,7 @@ class LamarckianMutation(Mutation):
         model: optimizers.MODEL_TYPE,
         population_size: int = 15,
         batch_size: int = 30,
+        **kwargs,
     ):
         super().__init__(model=model)
         self.population_size = population_size
@@ -102,10 +107,12 @@ class LamarckianMutation(Mutation):
         self, population: list[Variant], train_examples: list[pm_types.Example]
     ) -> list[pm_types.PromptWrapper]:
         N = self.population_size - len(population)
-        # Generate batches with repeat sampling
         batches = []
-        for _ in range(N // self.batch_size):
-            batches.append(random.sample(population, self.batch_size))
+        for _ in range(N):
+            batches.append(random.sample(train_examples, self.batch_size))
+        return await asyncio.gather(
+            *[self.mutate_single(population[0].prompt, batch) for batch in batches]
+        )
 
     def _format_examples(self, examples: list[pm_types.Example]) -> str:
         return "\n".join(
@@ -114,12 +121,14 @@ class LamarckianMutation(Mutation):
         )
 
     async def mutate_single(
-        self, examples: list[pm_types.Example]
+        self, prompt: pm_types.PromptWrapper, examples: list[pm_types.Example]
     ) -> pm_types.PromptWrapper:
         formatted = self._format_examples(examples)
         with ls.trace(name="Lamarckian Mutation", inputs={"examples": formatted}) as rt:
-            prompt_output = await self.model.with_structured_output(
-                pm_types.OptimizedPromptOutput
+            prompt_response = await create_extractor(
+                self.model,
+                tools=[pm_types.prompt_schema(prompt)],
+                tool_choice="OptimizedPromptOutput",
             ).ainvoke(
                 [
                     (
@@ -130,8 +139,11 @@ class LamarckianMutation(Mutation):
                     ("user", LAMARCKIAN_MUTATION_PROMPT.format(examples=formatted)),
                 ]
             )
-            rt.add_output({"output": prompt_output})
-        return prompt_output.improved_prompt
+            prompt_output = cast(
+                pm_types.OptimizedPromptOutput, prompt_response["responses"][0]
+            )
+            rt.add_outputs({"output": prompt_output})
+        return pm_types.PromptWrapper.from_prior(prompt, prompt_output.improved_prompt)
 
 
 class GradientDescentMutation(Mutation):
@@ -141,6 +153,7 @@ class GradientDescentMutation(Mutation):
         model: optimizers.MODEL_TYPE | None = None,
         score_threshold: float = 0.8,
         max_batch_size: Optional[int] = 20,
+        **kwargs,
     ):
         super().__init__(model=model)
         self.score_threshold = score_threshold
@@ -223,20 +236,25 @@ The prompt predicted: {example['run'].outputs}
                     failing_examples="\n".join(failing_examples),
                 )
             )
-            rt.add_output({"output": advice_msg})
+            rt.add_outputs({"output": advice_msg})
         with ls.trace(
             name="Apply Gradient",
             inputs={"existing_prompt": existing_prompt, "feedback": advice_msg.content},
         ):
-            prompt_output = await self.model.with_structured_output(
-                pm_types.OptimizedPromptOutput
+            prompt_output = await create_extractor(
+                self.model,
+                tools=[pm_types.prompt_schema(variant.prompt)],
+                tool_choice="OptimizedPromptOutput",
             ).ainvoke(
                 GRADIENT_DESCENT_APPLICATION_PROMPT.format(
                     existing_prompt=existing_prompt,
                     feedback=advice_msg.content,
                 )
             )
-            rt.add_output({"output": prompt_output})
+            prompt_output = cast(
+                pm_types.OptimizedPromptOutput, prompt_output["responses"][0]
+            )
+            rt.add_outputs({"output": prompt_output})
 
         candidate = pm_types.PromptWrapper.from_prior(
             variant.prompt, prompt_output.improved_prompt
@@ -253,11 +271,11 @@ The prompt predicted: {example['run'].outputs}
 SEMANTIC_MUTATION_PROMPT = """You are a mutator. Given a prompt, your task is to generate another prompt with the same semantic meaning and intentions.
 
 # Example:
-current prompt: { existing prompt }
+current prompt: Classify the sentiment of the following sentence as either negative or positive:
 mutated prompt: Determine the sentiment of the given sentence and assign a label from ['negative', 'positive'].
 
 Given:
-current prompt: { existing prompt }
+current prompt: {existing_prompt}
 mutated prompt:
 """
 
@@ -274,10 +292,15 @@ class SemanticMutation(Mutation):
             name="Semantic Mutation",
             inputs={"existing_prompt": existing_prompt},
         ) as rt:
-            prompt_output = await self.model.with_structured_output(
-                pm_types.OptimizedPromptOutput
+            prompt_output = await create_extractor(
+                self.model,
+                tools=[pm_types.prompt_schema(variant.prompt)],
+                tool_choice="OptimizedPromptOutput",
             ).ainvoke(SEMANTIC_MUTATION_PROMPT.format(existing_prompt=existing_prompt))
-            rt.add_output({"output": prompt_output})
+            prompt_output = cast(
+                pm_types.OptimizedPromptOutput, prompt_output["responses"][0]
+            )
+            rt.add_outputs({"output": prompt_output})
 
         candidate = pm_types.PromptWrapper.from_prior(
             variant.prompt, prompt_output.improved_prompt
@@ -310,7 +333,11 @@ The newly mutated prompt is:
 
 class EdaMutation(Mutation):
     def __init__(
-        self, *, model: optimizers.MODEL_TYPE | None = None, prompt: str = EDA_PROMPT
+        self,
+        *,
+        model: optimizers.MODEL_TYPE | None = None,
+        prompt: str = EDA_PROMPT,
+        **kwargs,
     ):
         super().__init__(model=model)
         self.prompt = prompt
@@ -345,10 +372,15 @@ class EdaMutation(Mutation):
             name="Semantic Mutation",
             inputs={"existing_prompts": existing_prompts},
         ) as rt:
-            prompt_output = await self.model.with_structured_output(
-                pm_types.OptimizedPromptOutput
+            prompt_output = await create_extractor(
+                self.model,
+                tools=[pm_types.prompt_schema(cluster[0].prompt)],
+                tool_choice="OptimizedPromptOutput",
             ).ainvoke(self.prompt.format(existing_prompts=existing_prompts))
-            rt.add_output({"output": prompt_output})
+            prompt_output = cast(
+                pm_types.OptimizedPromptOutput, prompt_output["responses"][0]
+            )
+            rt.add_outputs({"output": prompt_output})
 
         candidate = pm_types.PromptWrapper.from_prior(
             cluster[0].prompt, prompt_output.improved_prompt
@@ -368,6 +400,7 @@ class EDAIndexMutation(EdaMutation):
         *,
         model: optimizers.MODEL_TYPE | None = None,
         prompt: str = EDA_INDEX_PROMPT,
+        **kwargs,
     ):
         super().__init__(model=model, prompt=prompt)
 
@@ -378,8 +411,8 @@ class EDAIndexMutation(EdaMutation):
 CROSS_OVER_PROMPT = """You are a mutator who is familiar with the concept of cross-over in genetic algorithms, namely combining the genetic information of two parents to generate new offspring. Given two parent prompts, you will perform a cross-over to generate an offspring prompt that covers the same semantic meaning as both parents.
 
 ## Given ##
-Parent prompt 1: { prompt 1 }
-Parent prompt 2: { prompt 2 }
+Parent prompt 1: {prompt_1}
+Parent prompt 2: {prompt_2}
 Offspring prompt:
 """
 
@@ -390,6 +423,7 @@ class CrossoverMutation(Mutation):
         *,
         model: optimizers.MODEL_TYPE | None = None,
         prompt: str = CROSS_OVER_PROMPT,
+        **kwargs,
     ):
         super().__init__(model=model)
         self.prompt = prompt
@@ -411,10 +445,19 @@ class CrossoverMutation(Mutation):
             name="Semantic Mutation",
             inputs={"existing_prompts": existing_prompts},
         ) as rt:
-            prompt_output = await self.model.with_structured_output(
-                pm_types.OptimizedPromptOutput
-            ).ainvoke(self.prompt.format(existing_prompts=existing_prompts))
-            rt.add_output({"output": prompt_output})
+            prompt_output = await create_extractor(
+                self.model,
+                tools=[pm_types.prompt_schema(pair[0].prompt)],
+                tool_choice="OptimizedPromptOutput",
+            ).ainvoke(
+                self.prompt.format(
+                    prompt_1=cluster_prompts[0], prompt_2=cluster_prompts[1]
+                )
+            )
+            prompt_output = cast(
+                pm_types.OptimizedPromptOutput, prompt_output["responses"][0]
+            )
+            rt.add_outputs({"output": prompt_output})
 
         candidate = pm_types.PromptWrapper.from_prior(
             pair[0].prompt, prompt_output.improved_prompt
@@ -480,16 +523,17 @@ def ensure_phase_config(config: dict | PhaseConfig) -> PhaseConfig:
     return PhaseConfig(
         mutation=config["mutation"],
         population_size=config.get("population_size", 5),
-        improvement_threshold=config.get("improvement_threshold", 0.2),
+        improvement_threshold=config.get(
+            "improvement_threshold", 0.2
+        ),  # 20% "better" - kinda arbitrary
         max_attempts=config.get("max_attempts", 5),
     )
 
 
 def load_mutation(
     config: PhaseConfig,
-    model: optimizers.MODEL_TYPE | None = None,
+    model: optimizers.MODEL_TYPE,
 ) -> Mutation:
-    mutation_cls = MUTATIONS[config["mutation"]]
-    return mutation_cls.from_config_and_model(
-        model=model or "openai:gpt-4o-mini", config=config
-    )
+    config = config.copy()
+    mutation_cls = MUTATIONS[config.pop("mutation")]
+    return mutation_cls.from_config({**config, "model": model})

@@ -1,4 +1,5 @@
 """Utility functions."""
+
 from difflib import SequenceMatcher
 from rich import print as richprint
 from rich.panel import Panel

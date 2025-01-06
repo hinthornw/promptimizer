@@ -2,6 +2,7 @@ import copy
 import json
 from dataclasses import dataclass, field, fields
 from typing import Callable, Optional
+import uuid
 from uuid import UUID
 
 import langsmith as ls
@@ -64,14 +65,22 @@ class PromptConfig:
 class PromptWrapper(PromptConfig):
     _cached: ChatPromptTemplate | None = None
     _postlude: RunnableBinding | BaseChatModel | None = None
+    lineage: str | None = None
 
     @classmethod
     def from_config(cls, config: PromptConfig):
+        id_ = uuid.uuid5(
+            uuid.NAMESPACE_DNS,
+            str(
+                config.identifier,
+            ),
+        )
         return cls(
             identifier=config.identifier,
             prompt_str=config.prompt_str,
             model_config=config.model_config,
             which=config.which,
+            lineage=id_,
         )
 
     def load(self, client: ls.Client | None = None) -> ChatPromptTemplate:
@@ -117,7 +126,6 @@ class PromptWrapper(PromptConfig):
                     else:
                         postlude = bound_llm
                 else:
-                    # Default to gpt-4o-mini
                     postlude = init_chat_model(
                         **(self.model_config or DEFAULT_PROMPT_MODEL_CONFIG)
                     )
@@ -167,12 +175,14 @@ class PromptWrapper(PromptConfig):
         copied = copy.deepcopy(copied)
         tmpl = copied.messages[prior.which]
         tmpl.prompt.template = output  # type: ignore
+        id_ = str(uuid.uuid5(uuid.NAMESPACE_DNS, output))
         return cls(
             identifier=prior.identifier,
             prompt_str=prior.prompt_str,
             which=prior.which,
             _cached=copied,
             _postlude=prior._postlude,
+            lineage=str(prior.lineage) + "." + str(id_),
         )
 
     def push_prompt(

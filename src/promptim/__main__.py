@@ -81,17 +81,20 @@ async def run(
     from promptim.trainer import PromptTrainer
 
     optimizer = PromptTrainer.from_config(
-        config.get("optimizer", config.get("optimizer_config", {}))
+        config.get("optimizer", config.get("optimizer_config", {})),
+        algo_config={
+            "batch_size": batch_size,
+            "train_size": train_size,
+            "epochs": epochs,
+            "debug": debug,
+        }
+        | (config.get("algorithm") or {}),
     )
 
     with ls.tracing_context(project_name="Optim"):
-        prompt, score = await optimizer.optimize_prompt(
+        prompt, score = await optimizer.train(
             task,
-            batch_size=batch_size,
-            train_size=train_size,
-            epochs=epochs,
             annotation_queue=annotation_queue,
-            debug=debug,
             commit_prompts=commit,
         )
     if commit and task.initial_prompt.identifier is not None:
@@ -619,9 +622,9 @@ def create_task(
         },
         "initial_prompt": {"identifier": identifier},
     }
-    config[
-        "$schema"
-    ] = "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+    config["$schema"] = (
+        "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+    )
     with open(os.path.join(path, "config.json"), "w") as f:
         json.dump(config, f, indent=2)
 
@@ -810,9 +813,9 @@ def create_example_task(path: str, name: str):
         },
     }
 
-    config[
-        "$schema"
-    ] = "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+    config["$schema"] = (
+        "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+    )
     with open(os.path.join(path, "config.json"), "w") as f:
         json.dump(config, f, indent=2)
 

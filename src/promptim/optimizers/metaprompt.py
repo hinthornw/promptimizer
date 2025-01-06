@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Sequence
 from langsmith.evaluation._arunner import ExperimentResultRow
 from dataclasses import dataclass, field
 from promptim import types as pm_types
@@ -121,11 +121,20 @@ class MetaPromptOptimizer(optimizers.BaseOptimizer):
 
     async def improve_prompt(
         self,
-        current_prompt: pm_types.PromptWrapper,
+        history: Sequence[Sequence[pm_types.PromptWrapper]],
         results: List[ExperimentResultRow],
         task: pm_types.Task,
-        other_attempts: List[pm_types.PromptWrapper],
-    ) -> pm_types.PromptWrapper:
+    ) -> list[pm_types.PromptWrapper]:
+        current_prompt = history[-1][-1]
+        other_attempts = list(
+            {
+                p.get_prompt_str(): p
+                for ps in history
+                for p in ps
+                if p.get_prompt_str() != current_prompt.get_prompt_str()
+            }.values()
+        )[-5:]
+
         annotated_results = self._format_results(results)
         chain = self.model.with_structured_output(pm_types.OptimizedPromptOutput)
         inputs = self.meta_prompt.format(
@@ -149,4 +158,4 @@ class MetaPromptOptimizer(optimizers.BaseOptimizer):
             "Updated Prompt",
         )
 
-        return candidate
+        return [candidate]

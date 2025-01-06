@@ -1,7 +1,16 @@
 import random
 import time
 from collections import defaultdict
-from typing import Literal, Optional, Callable, Coroutine, TypeVar, Union, Any
+from typing import (
+    Literal,
+    Optional,
+    Callable,
+    Coroutine,
+    TypeVar,
+    Union,
+    Any,
+    TYPE_CHECKING,
+)
 from uuid import UUID
 from dataclasses import asdict, is_dataclass
 import datetime
@@ -24,6 +33,9 @@ from rich.progress import Progress
 from rich.table import Table
 import asyncio
 import weakref
+
+if TYPE_CHECKING:
+    from promptim.algorithms import BaseAlgorithm
 
 
 def ltq():
@@ -48,6 +60,7 @@ class PromptTrainer:
     def __init__(
         self,
         optimizer: pm_optimizers.BaseOptimizer,
+        algorithm: Optional["BaseAlgorithm"] = None,
         client: Optional[ls.Client] = None,
         seed: int = 42,
     ):
@@ -62,6 +75,7 @@ class PromptTrainer:
         self.client = client or ls.Client()
         random.seed(seed)
         self.rng = random.Random(seed)
+        self.algorithm = algorithm
         self._loop = asyncio.get_running_loop()
         self._aqueue: dict[asyncio.Future, Callable[[], Any]] = {}
         self._task = self._loop.create_task(_run(self._aqueue, weakref.ref(self)))
@@ -72,12 +86,14 @@ class PromptTrainer:
             await asyncio.gather(*self._aqueue.keys())
 
     @classmethod
-    def from_config(cls, config: dict | pm_config.Config):
+    def from_config(cls, config: dict | pm_config.Config, algo_config: dict):
         """Create a PromptTrainer from a configuration dictionary.
 
         Args:
             config: Either a MetaPromptOptimizerConfig or FewShotOptimizerConfig
         """
+        from promptim import algorithms as pm_algorithms
+
         if is_dataclass(config):
             cp = asdict(config)
         else:
@@ -89,39 +105,141 @@ class PromptTrainer:
                 "model", pm_types.DEFAULT_OPTIMIZER_MODEL_CONFIG
             )
         optimizer = pm_optimizers.load_optimizer(optimizer_config)
+        algorithm = pm_algorithms.load_algorithm(
+            algo_config, optimizer_model=optimizer.model
+        )
+        return cls(optimizer=optimizer, algorithm=algorithm)
 
-        return cls(optimizer=optimizer)
-
-    async def optimize_prompt(
+    async def train(
         self,
         task: pm_types.Task,
         *,
-        system_config: dict | None = None,
-        train_size: Optional[int] = None,
-        batch_size: int = 40,
-        epochs: int = 1,
-        annotation_queue: str | None = None,
-        debug: bool = False,
+        initial_population: Union[
+            pm_types.PromptWrapper,
+            list[pm_types.PromptWrapper],
+            None,
+            str,
+            dict,
+            pm_types.PromptConfig,
+        ] = None,
+        system_config: Optional[dict] = None,
+        annotation_queue: Optional[str] = None,
         commit_prompts: bool = False,
-        experiment_name: str | None = None,
+        experiment_name: Optional[str] = None,
     ) -> tuple[pm_types.PromptWrapper, float]:
-        """Optimizes a prompt for a specific task through multiple iterations."""
-        experiment_name = experiment_name or f"Prompt Optimization - {task.name}"
-        initial_prompt = pm_types.PromptWrapper.from_config(task.initial_prompt)
-        if initial_prompt.prompt_str:
-            if commit_prompts:
+        """
+        Delegates the macro-level training flow to the specified algorithm.
+        The trainer still handles data loading, concurrency, experiment creation, etc.
+        """
+        if initial_population is None:
+            initial_population = task.initial_prompt
+        if isinstance(initial_population, pm_types.PromptWrapper):
+            initial_population = [initial_population]
+        elif isinstance(initial_population, (str, dict, pm_types.PromptConfig)):
+            initial_population = pm_types.PromptWrapper.from_config(initial_population)
+
+        # Initialize the prompt(s)
+        for prompt in initial_population:
+            if prompt.prompt_str and commit_prompts:
                 richprint(
                     "[yellow]Warning: No prompt identifier is configured for this run. "
                     "Prompts will not be committed.[/yellow]"
                 )
                 commit_prompts = False
-        if task.system is None:
-            task.system = task.get_prompt_system(initial_prompt)
-        initial_prompt.load(self.client)  # check
-        current_prompt = initial_prompt
-        best_score = 0
-        best_prompt = initial_prompt
-        other_attempts = []
+            if task.system is None:
+                task.system = task.get_prompt_system(prompt)
+            prompt.load(self.client)
+
+        train_examples, dev_examples, test_examples = await self._get_data(
+            initial_population[0], task
+        )
+        experiment_name = experiment_name or f"Prompt Optimization - {task.name}"
+
+        (
+            baseline_scores,
+            baseline_experiment_results,
+        ) = await self._get_baseline_scores(
+            task,
+            train_examples,
+            dev_examples,
+            initial_population[-1],
+            experiment_name=experiment_name,
+            debug=self.algorithm.config.debug,
+            system_config=system_config,
+        )
+        # TODO: fix potential baseline <> population mismatch
+        best_prompt, best_score = await self.algorithm.run(
+            trainer=self,
+            task=task,
+            initial_population=initial_population,
+            system_config=system_config,
+            annotation_queue=annotation_queue,
+            train_examples=train_examples,
+            dev_examples=dev_examples,
+            commit_prompts=commit_prompts,
+            experiment_name=experiment_name,
+            baseline_scores=baseline_scores,
+            baseline_experiment_results=baseline_experiment_results,
+        )
+        await self._get_test_scores(
+            task,
+            test_examples,
+            initial_population[0],
+            best_prompt,
+            experiment_name,
+            self.algorithm.config.debug,
+            system_config,
+        )
+        pm_utils.print_rich_diff(
+            initial_population[0].get_prompt_str_in_context(),
+            best_prompt.get_prompt_str_in_context(),
+            title="Final Prompt Updates",
+        )
+        await self.wait_for_all()
+        return best_prompt, best_score
+
+    async def optimize_prompt(
+        self,
+        task: pm_types.Task,
+        initial_prompt: Optional[Union[str, dict, pm_types.PromptWrapper]] = None,
+        train_size: Optional[int] = None,
+        batch_size: int = 40,
+        epochs: int = 1,
+        debug: bool = False,
+        system_config: Optional[dict] = None,
+        annotation_queue: Optional[str] = None,
+        commit_prompts: bool = False,
+        experiment_name: Optional[str] = None,
+    ) -> tuple[pm_types.PromptWrapper, float]:
+        """Legacy method that uses MinibatchAlgorithm for backward compatibility."""
+        from .algorithms import MinibatchAlgorithm, AlgorithmConfig
+
+        algo_config = AlgorithmConfig(
+            train_size=train_size,
+            batch_size=batch_size,
+            epochs=epochs,
+            debug=debug,
+        )
+        algo = MinibatchAlgorithm(algo_config)
+
+        if initial_prompt is None:
+            initial_prompt = task.initial_prompt
+        if isinstance(initial_prompt, (str, dict)):
+            initial_prompt = pm_types.PromptWrapper.from_config(initial_prompt)
+
+        return await self.train(
+            task=task,
+            algorithm=algo,
+            initial_population=[initial_prompt],
+            system_config=system_config,
+            annotation_queue=annotation_queue,
+            commit_prompts=commit_prompts,
+            experiment_name=experiment_name,
+        )
+
+    async def _get_data(
+        self, initial_prompt: pm_types.PromptWrapper, task: pm_types.Task
+    ):
         # Print the original prompt
         richprint(
             Panel.fit(
@@ -206,299 +324,83 @@ class PromptTrainer:
 
             progress.update(ptsk, advance=1)
 
-        with Progress() as progress:
-            main_task = progress.add_task(
-                "[cyan]Optimizing prompt...", total=epochs + 2
-            )
+        return train_examples, dev_examples, test_examples
 
-            # Step 1: Get baseline scores
-            progress.update(
-                main_task, advance=10, description="[cyan]Getting baseline scores..."
-            )
-            if task.baseline_experiment:
-                baseline_scores = await self._fetch_baseline_metrics(
-                    task.baseline_experiment
-                )
-            else:
-                baseline_session = await _queue(
-                    self,
-                    _create_experiment,
-                    client=self.client,
-                    dataset_id=train_examples[0].dataset_id,
-                    experiment_name=experiment_name + "- baseline",
-                )
-                baseline_experiment_results = await self._evaluate_prompt(
-                    current_prompt,
-                    task,
-                    dev_examples,
-                    debug=debug,
-                    system_config=system_config,
-                    experiment=baseline_session,
-                )
-                if experiment_url := _get_url(
-                    baseline_session, dev_examples[0].dataset_id
-                ):
-                    progress.console.print(
-                        f"See baseline experiment at: {experiment_url}"
-                    )
-
-                baseline_scores = await self.calculate_scores(
-                    baseline_experiment_results
-                )
-            best_score = (
-                sum(baseline_scores.values()) / len(baseline_scores)
-                if baseline_scores
-                else None
-            )
-
-            table = Table(
-                title="Baseline Scores (Dev Set)",
-                show_header=True,
-                header_style="bold magenta",
-            )
-            table.add_column("Metric", style="cyan", no_wrap=True)
-            table.add_column("Score", justify="right", style="green")
-
-            for metric, score in baseline_scores.items():
-                table.add_row(metric, f"{score:.4f}")
-
-            table.add_row("Average", f"{best_score:.4f}", style="bold")
-
-            progress.console.print(
-                Panel(
-                    table,
-                    title="[bold]Initial Prompt Evaluation[/bold]",
-                    border_style="cyan",
-                )
-            )
-            progress.console.print("\n[bold cyan]Beginning optimization.[/bold cyan]")
-            progress.console.print()
-
-            # Step 2: Train
-            progress.update(
-                main_task,
-                advance=1,
-                description="[cyan]Optimizing prompt on epoch 1...",
-            )
-            training_session_fut = _queue(
+    async def _get_baseline_scores(
+        self,
+        task: pm_types.Task,
+        train_examples: list[Example],
+        dev_examples: list[Example],
+        current_prompt: pm_types.PromptWrapper,
+        experiment_name: str,
+        debug: bool,
+        system_config: Optional[dict] = None,
+    ) -> tuple[dict[str, float] | None, list[ExperimentResultRow] | None]:
+        # Step 1: Get baseline scores
+        if task.baseline_experiment:
+            return (await self._fetch_baseline_metrics(task.baseline_experiment)), None
+        else:
+            baseline_session = await _queue(
                 self,
                 _create_experiment,
                 client=self.client,
                 dataset_id=train_examples[0].dataset_id,
-                experiment_name=experiment_name + "- train [epoch 0]",
-                metadata={
-                    "split": "train",
-                    "epoch": 0,
-                },
+                experiment_name=experiment_name + "- baseline",
             )
-            for epoch in range(epochs):
-                training_session = await training_session_fut
-                if experiment_url := _get_url(
-                    training_session, train_examples[0].dataset_id
-                ):
-                    progress.console.print(
-                        f"See experiment for epoch {epoch} at: {experiment_url}"
-                    )
-
-                self.optimizer.on_epoch_start(epoch, task)
-                self.rng.shuffle(train_examples)
-                if train_size:
-                    train_examples = train_examples[:train_size]
-
-                batches = [
-                    train_examples[i : i + batch_size]
-                    for i in range(0, len(train_examples), batch_size)
-                ]
-
-                batch_task = progress.add_task(
-                    f"[yellow]Epoch {epoch+1} batches", total=len(batches)
-                )
-                all_train_scores = []
-                avg_score = -1
-                for bix, batch in enumerate(batches):
-                    if (
-                        bix == 0
-                        and epoch == 0
-                        and whole_banana
-                        and baseline_experiment_results
-                    ):
-                        bindices = {e.id for e in batch}
-                        results = [
-                            r
-                            for r in baseline_experiment_results
-                            if r["example"].id in bindices
-                        ]
-                    else:
-                        results = await self._evaluate_prompt(
-                            current_prompt,
-                            task,
-                            batch,
-                            debug=debug,
-                            experiment=training_session,
-                            system_config=system_config,
-                        )
-                    training_session_fut = _queue(
-                        self,
-                        _create_experiment,
-                        client=self.client,
-                        dataset_id=train_examples[0].dataset_id,
-                        experiment_name=experiment_name + f" - train [epoch {epoch+1}]",
-                        metadata={"epoch": epoch + 1, "split": "train"},
-                    )
-                    next_action = "continue"
-                    if annotation_queue:
-                        results, next_action = await self._wait_for_annotation_queue(
-                            results,
-                            annotation_queue,
-                            task,
-                            progress,
-                        )
-                    train_scores = await self.calculate_scores(results)
-                    train_score = (
-                        sum(train_scores.values()) / len(train_scores)
-                        if train_scores
-                        else None
-                    )
-                    all_train_scores.append(train_score)
-                    avg_score = sum(all_train_scores) / len(all_train_scores)
-                    progress.update(
-                        batch_task,
-                        description=f"[yellow]Epoch {epoch+1} (Avg training score: {avg_score:.4f})",
-                    )
-                    with ls.tracing_context(project_name=training_session.name):
-                        with ls.trace(
-                            name="improve_prompt",
-                            inputs={
-                                "current": current_prompt.get_prompt_str(),
-                            },
-                        ) as rt:
-                            setattr(rt, "session_id", training_session.id)
-                            run_url = self.client.get_run_url(
-                                run=rt, project_id=training_session.id
-                            )
-                            progress.console.print(f"See optimizer trace: {run_url}")
-                            improved = await self.optimizer.improve_prompt(
-                                current_prompt=current_prompt,
-                                results=results,
-                                task=task,
-                                other_attempts=other_attempts,
-                            )
-                            rt.add_outputs({"improved": improved.get_prompt_str()})
-                            current_prompt = improved
-                    if commit_prompts:
-                        pushed_id = current_prompt.push_prompt(client=self.client)
-                        progress.console.print(f"See prompt checkpoint: {pushed_id}")
-
-                    progress.update(
-                        batch_task,
-                        advance=1,
-                        description=f"[yellow]Epoch {epoch+1} (Avg Score: {avg_score:.4f})",
-                    )
-                    if next_action != "continue":
-                        break
-                # Evaluate on dev set after each epoch
-                progress.update(main_task, description="[cyan]Evaluating on dev set...")
-                dev_results = await self._evaluate_prompt(
-                    current_prompt,
-                    task,
-                    dev_examples,
-                    debug=debug,
-                    system_config=system_config,
-                )
-                dev_scores = await self.calculate_scores(dev_results)
-                dev_score = (
-                    sum(dev_scores.values()) / len(dev_scores) if dev_scores else None
-                )
-                progress.update(
-                    batch_task,
-                    description=f'[yellow]Epoch {epoch+1} (Dev: {f"{dev_score:.4f}" if dev_score is not None else "-"}, Train: {f"{avg_score:.4f}" if avg_score is not None else "-"})',
-                )
-
-                if dev_score is not None and dev_score > best_score:
-                    if best_prompt not in other_attempts:
-                        other_attempts.append(best_prompt)
-                    best_score = dev_score
-                    best_prompt = current_prompt
-                    progress.console.print(
-                        f"New best score: {best_score:.4f} (surpassed previous best)"
-                    )
-                    progress.console.print("Average of:")
-                    for metric, score in dev_scores.items():
-                        progress.console.print(f"  {metric}: {score:.4f}")
-                else:
-                    other_attempts.append(current_prompt)
-                    current_prompt = best_prompt
-                    progress.console.print(
-                        f"Score {dev_score:.4f} did not surpass best score {best_score:.4f}"
-                    )
-                progress.console.print()
-
-                progress.console.print(
-                    Panel(
-                        f"[bold]Epoch {epoch+1}[/bold]\n"
-                        f"Dev score: [cyan]{dev_score:.4f}[/cyan]\n"
-                        f"Best score: [green]{best_score:.4f}[/green]",
-                        title="Training Progress",
-                        expand=False,
-                        border_style="bold",
-                    )
-                )
-                progress.console.print()
-                progress.update(
-                    main_task,
-                    advance=1,
-                    description="[cyan]Optimizing prompt...",
-                )
-
-            test_baseline_session_fut = _queue(
-                self,
-                _create_experiment,
-                client=self.client,
-                dataset_id=train_examples[0].dataset_id,
-                experiment_name=experiment_name + "- test baseline",
-                metadata={
-                    "split": "test",
-                    "which": "baseline",
-                },
-            )
-            test_final_session_fut = _queue(
-                self,
-                _create_experiment,
-                client=self.client,
-                dataset_id=train_examples[0].dataset_id,
-                experiment_name=experiment_name + "- test final",
-                metadata={
-                    "split": "test",
-                    "which": "final",
-                },
-            )
-
-            # Step 3: Test
-            progress.update(
-                main_task, advance=10, description="[cyan]Running final tests..."
-            )
-            del train_examples
-            del dev_examples
-
-            initial_test_results = await self._evaluate_prompt(
-                initial_prompt,
+            baseline_experiment_results = await self._evaluate_prompt(
+                current_prompt,
                 task,
-                test_examples,
+                dev_examples,
                 debug=debug,
                 system_config=system_config,
-                experiment=await test_baseline_session_fut,
+                experiment=baseline_session,
             )
-            final_test_results = await self._evaluate_prompt(
-                best_prompt,
-                task,
-                test_examples,
-                debug=debug,
-                experiment=await test_final_session_fut,
-                system_config=system_config,
-            )
-            progress.update(
-                main_task, advance=10, description="[cyan]Optimization complete!"
-            )
+            if experiment_url := _get_url(baseline_session, dev_examples[0].dataset_id):
+                print(f"See baseline experiment at: {experiment_url}")
+
+            return (
+                await self.calculate_scores(baseline_experiment_results)
+            ), baseline_experiment_results
+
+    async def _get_test_scores(
+        self,
+        task: pm_types.Task,
+        test_examples: list[Example],
+        initial_prompt: pm_types.PromptWrapper,
+        best_prompt: pm_types.PromptWrapper,
+        experiment_name: str,
+        debug: bool,
+        system_config: Optional[dict] = None,
+    ):
+        test_baseline_session_fut = self._enqueue_experiment(
+            experiment_name=experiment_name,
+            examples=test_examples,
+            split="test",
+            metadata={"which": "baseline"},
+        )
+        test_final_session_fut = self._enqueue_experiment(
+            experiment_name=experiment_name,
+            examples=test_examples,
+            split="test",
+            metadata={"which": "final"},
+        )
+
+        initial_test_results = await self._evaluate_prompt(
+            initial_prompt,
+            task,
+            test_examples,
+            debug=debug,
+            system_config=system_config,
+            experiment=await test_baseline_session_fut,
+        )
+        final_test_results = await self._evaluate_prompt(
+            best_prompt,
+            task,
+            test_examples,
+            debug=debug,
+            experiment=await test_final_session_fut,
+            system_config=system_config,
+        )
         # Print final report
         initial_scores = await self.calculate_scores(initial_test_results)
         final_scores = await self.calculate_scores(final_test_results)
@@ -514,16 +416,11 @@ class PromptTrainer:
             table.add_row(
                 metric, f"{initial_scores[metric]:.4f}", f"{final_scores[metric]:.4f}"
             )
-
         richprint(Panel(table, title="Final Report", border_style="bold"))
-
-        pm_utils.print_rich_diff(
-            initial_prompt.get_prompt_str_in_context(),
-            best_prompt.get_prompt_str_in_context(),
-            title="Final Prompt Updates",
+        return (
+            initial_scores,
+            final_scores,
         )
-        await self.wait_for_all()
-        return best_prompt, best_score
 
     async def _wait_for_annotation_queue(
         self,
@@ -687,6 +584,29 @@ class PromptTrainer:
             col for col in test_results.columns if col.startswith("feedback.")
         ]
         return {col: test_results[col].mean() for col in metric_cols}
+
+    def _enqueue_experiment(
+        self,
+        experiment_name: str,
+        examples: list[Example],
+        split: str,
+        epoch: int | None = None,
+        metadata: dict | None = None,
+    ):
+        metadata = metadata or {}
+        if epoch is not None:
+            metadata["epoch"] = epoch
+        return _queue(
+            self,
+            _create_experiment,
+            client=self.client,
+            dataset_id=examples[0].dataset_id,
+            experiment_name=experiment_name + f" - {split} [epoch {epoch}]",
+            metadata={
+                "split": split,
+                **metadata,
+            },
+        )
 
     @staticmethod
     def _validate_split_examples(

@@ -1,4 +1,4 @@
-from typing import Optional, Literal
+from typing import Optional, Literal, Sequence
 from langsmith.evaluation._arunner import ExperimentResultRow
 from dataclasses import dataclass, field
 from promptim import types as pm_types, _utils as pm_utils
@@ -128,11 +128,10 @@ The prompt predicted: {example['run'].outputs}
 
     async def improve_prompt(
         self,
-        current_prompt: pm_types.PromptWrapper,
+        history: Sequence[Sequence[pm_types.PromptWrapper]],
         results: list[ExperimentResultRow],
         task: pm_types.Task,
-        other_attempts: list[pm_types.PromptWrapper],
-    ) -> pm_types.PromptWrapper:
+    ) -> list[pm_types.PromptWrapper]:
         """Improve prompt using feedback from failing examples.
 
         1. Select failing examples
@@ -141,12 +140,16 @@ The prompt predicted: {example['run'].outputs}
         4. Format advisor responses into a string
         5. Run metaprompt over formatted advice
         """
+        current_prompt = history[-1][-1]
+        other_attempts = [
+            p for prompts in history for p in prompts if p is not current_prompt
+        ]
         # 1. Identify failing examples
         failing_examples = self._format_failing_examples(results)
 
         # 2. If no failing examples, return current prompt unchanged
         if not failing_examples:
-            return current_prompt
+            return list(history[-1])
         if self.max_batch_size and len(failing_examples) > self.max_batch_size:
             random.shuffle(failing_examples)
             failing_examples = failing_examples[: self.max_batch_size]
@@ -204,4 +207,4 @@ The prompt predicted: {example['run'].outputs}
             candidate.get_prompt_str_in_context(),
             "Updated Prompt with Targeted Improvements",
         )
-        return candidate
+        return [candidate]

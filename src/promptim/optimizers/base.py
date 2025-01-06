@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import List, Type
+from typing import List, Type, Sequence
 from langsmith.evaluation._arunner import ExperimentResultRow
 from promptim import types as pm_types
 from dataclasses import dataclass, field, is_dataclass, asdict
@@ -20,7 +20,7 @@ class Config:
     )
 
 
-class BaseOptimizer(ABC):
+class BaseMutator(ABC):
     config_cls: Type[Config]
 
     def __init__(self, *, model: MODEL_TYPE):
@@ -33,15 +33,16 @@ class BaseOptimizer(ABC):
         config_ = {k: v for k, v in config.items() if k != "kind"}
         return cls(**config_)
 
+
+class BaseOptimizer(BaseMutator):
     @abstractmethod
     async def improve_prompt(
         self,
-        current_prompt: pm_types.PromptWrapper,
+        history: Sequence[Sequence[pm_types.PromptWrapper]],
         results: List[ExperimentResultRow],
         task: pm_types.Task,
-        other_attempts: List[pm_types.PromptWrapper],
-    ) -> pm_types.PromptWrapper:
-        """Given the current prompt and the latest evaluation results,
+    ) -> list[pm_types.PromptWrapper]:
+        """Given the current generation of prompts and the latest evaluation results,
         propose a new and improved prompt variant."""
 
     def on_epoch_start(self, epoch: int, task: pm_types.Task):
@@ -51,7 +52,7 @@ class BaseOptimizer(ABC):
 # Private utils
 
 
-def _resolve_model(model: MODEL_TYPE) -> dict:
+def _resolve_model(model: MODEL_TYPE) -> BaseChatModel:
     if isinstance(model, dict):
         return init_chat_model(**model)
     elif isinstance(model, BaseChatModel):

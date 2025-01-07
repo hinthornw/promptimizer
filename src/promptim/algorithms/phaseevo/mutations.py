@@ -1,4 +1,5 @@
 from abc import abstractmethod
+import math
 import promptim.types as pm_types
 from collections import deque
 from typing import Optional, Literal, TypedDict, cast
@@ -9,6 +10,9 @@ import asyncio
 import random
 import langsmith as ls
 from trustcall import create_extractor
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Variant:
@@ -50,6 +54,9 @@ class Variant:
         ]
         self.results = results
 
+    def __repr__(self) -> str:
+        return f"Variant(fitness={self.fitness}, id={self.prompt.identifier}, lineage_depth={len(self.prompt.lineage) if self.prompt.lineage else 0}, prompt={self.prompt.get_prompt_str_in_context()})"
+
 
 class Mutation(optimizers.BaseMutator):
     def __init__(self, *, model: optimizers.MODEL_TYPE, **kwargs):
@@ -61,17 +68,28 @@ class Mutation(optimizers.BaseMutator):
     ) -> list[pm_types.PromptWrapper]: ...
 
 
-GRADIENT_DESCENT_GENERATION_PROMPT = """You are a quick improver. Given an existing prompt and a series of cases where it made mistakes, look through each case carefully and identify what is causing the mistakes. Based on these observations, output ways to improve the prompts based on the mistakes.
+GRADIENT_DESCENT_GENERATION_PROMPT = """You are a prompt optimizer. Given an existing prompt and cases where it made mistakes, analyze what's causing the failures and how the prompt could be improved.
+
 ## Existing Prompt ##
 {existing_prompt}
 
+{previous_analysis}
+
 ## Cases where it gets wrong: ##
-{failing_examples}
+{failing_examples}{passing_examples}
 
-ways to improve the existing prompt based on observations of the mistakes above are:
-"""
+Carefully analyze the test cases to interpret the test criteria/rubric. Check your work. Review each test case one-by-one. Label all reasons it failed. Identify all changes needed in the output to pass. Consider both what the prompt is doing and what it isn't doing, and how the language model is responding to (or ignoring) the existing content and structure. You might explore techniques like:
+- Few-shot examples showing ideal behavior
+- Chain-of-thought paths for complex cases
+- Counter-examples demonstrating failure modes
+- Strategic structure (phases, markers, roles)
+- Task-specific patterns for this domain
 
-GRADIENT_DESCENT_APPLICATION_PROMPT = """You are a quick improver. Given an existing prompt and feedback on how it should improve, create an improved version based on the feedback.
+Or other techniques to induce better performance from the language model for these test cases.
+
+Detail your suggested improvements, being specific about what to change and why those changes would help prevent the observed errors."""
+
+GRADIENT_DESCENT_APPLICATION_PROMPT = """You are a prompt optimizer. Transform this prompt based on the provided feedback, feeling free to use any effective techniques that will improve performance.
 
 ## Existing Prompt ##
 {existing_prompt}
@@ -103,13 +121,18 @@ class LamarckianMutation(Mutation):
         self.population_size = population_size
         self.batch_size = batch_size
 
+    @ls.traceable
     async def mutate(
         self, population: list[Variant], train_examples: list[pm_types.Example]
     ) -> list[pm_types.PromptWrapper]:
+        contain_outputs = [e for e in train_examples if e.outputs]
+        if not contain_outputs:
+            logger.warning("No examples contain outputs. Skipping Lamarckian mutation.")
+            return []
         N = self.population_size - len(population)
         batches = []
         for _ in range(N):
-            batches.append(random.sample(train_examples, self.batch_size))
+            batches.append(random.sample(contain_outputs, self.batch_size))
         return await asyncio.gather(
             *[self.mutate_single(population[0].prompt, batch) for batch in batches]
         )
@@ -120,6 +143,7 @@ class LamarckianMutation(Mutation):
             for example in examples
         )
 
+    @ls.traceable
     async def mutate_single(
         self, prompt: pm_types.PromptWrapper, examples: list[pm_types.Example]
     ) -> pm_types.PromptWrapper:
@@ -158,6 +182,106 @@ class GradientDescentMutation(Mutation):
         super().__init__(model=model)
         self.score_threshold = score_threshold
         self.max_batch_size = max_batch_size
+        self.passing_num = 5
+
+    @ls.traceable
+    async def mutate(
+        self, population: list[Variant], train_examples: list[pm_types.Example]
+    ) -> list[pm_types.PromptWrapper]:
+        """Improve prompt using "gradient descent".
+
+        AKA feedback from failing examples.
+
+        1. Select failing examples
+        2. If no failing examples, return current prompt
+        3. Batch advisor over failing examples
+        4. Format advisor responses into a string
+        5. Run metaprompt over formatted advice
+        """
+        return await asyncio.gather(*(self.mutate_single(v) for v in population))
+
+    @ls.traceable
+    async def mutate_single(self, variant: Variant) -> pm_types.PromptWrapper:
+        failing_examples = self._format_failing_examples(variant.results)
+        passing_examples = self._format_passing_examples(variant.results)
+        previous_analysis_list = None
+        if variant.prompt.extra and (
+            previous_analysis_list := variant.prompt.extra.get(
+                "previous_gradient_analysis"
+            )
+        ):
+            previous_analysis = self._format_previous_analysis(previous_analysis_list)
+        else:
+            previous_analysis = ""
+        if not failing_examples:
+            return variant.prompt
+        if self.max_batch_size and len(failing_examples) > self.max_batch_size:
+            random.shuffle(failing_examples)
+            failing_examples = failing_examples[: self.max_batch_size]
+        existing_prompt = variant.prompt.get_prompt_str_in_context()
+        with ls.trace(
+            name="Compute Gradient",
+            inputs={
+                "failing_examples": "\n".join(failing_examples),
+                "passing_examples": passing_examples,
+                "existing_prompt": existing_prompt,
+                "previous_analysis": previous_analysis,
+            },
+        ) as rt:
+            advice_msg = await self.model.ainvoke(
+                GRADIENT_DESCENT_GENERATION_PROMPT.format(
+                    existing_prompt=existing_prompt,
+                    failing_examples="\n".join(failing_examples),
+                    passing_examples=passing_examples,
+                    previous_analysis=previous_analysis,
+                )
+            )
+            rt.add_outputs({"output": advice_msg})
+        with ls.trace(
+            name="Apply Gradient",
+            inputs={"existing_prompt": existing_prompt, "feedback": advice_msg.content},
+        ):
+            prompt_output = await create_extractor(
+                self.model,
+                tools=[pm_types.prompt_schema(variant.prompt)],
+                tool_choice="OptimizedPromptOutput",
+            ).ainvoke(
+                GRADIENT_DESCENT_APPLICATION_PROMPT.format(
+                    existing_prompt=existing_prompt,
+                    feedback=advice_msg.content,
+                )
+            )
+            prompt_output = cast(
+                pm_types.OptimizedPromptOutput, prompt_output["responses"][0]
+            )
+            rt.add_outputs({"output": prompt_output})
+
+        previous_analysis = previous_analysis_list or []
+        previous_analysis.append(prompt_output.analysis)
+        candidate = pm_types.PromptWrapper.from_prior(
+            variant.prompt,
+            prompt_output.improved_prompt,
+            extra_info={"previous_gradient_analysis": previous_analysis},
+        )
+
+        pm_utils.print_rich_diff(
+            variant.prompt.get_prompt_str_in_context(),
+            candidate.get_prompt_str_in_context(),
+            f"{self.__class__.__name__} Mutated Prompt",
+        )
+        return candidate
+
+    def _format_previous_analysis(self, previous_analysis: list[str]):
+        linear = "\n".join([f"{i}: {a}" for i, a in enumerate(previous_analysis)])
+        return f"""## Previous Gradient Analysis ##
+
+You analyzed previous variants of this prompt with the following conclusions:
+<analysis>
+{linear}
+</analysis>
+
+Correct errors in your analysis. What are you misunderstanding or miscommunicating?\
+Your previous analysis was either wrong, inadequate, or ignored. Consider this before analyzing the test results."""
 
     def _format_failing_examples(self, results: list[ExperimentResultRow]) -> list[str]:
         """Identify and format examples that fall below the score threshold."""
@@ -191,84 +315,80 @@ class GradientDescentMutation(Mutation):
 
         scores = "\n".join(scores)
         if scores:
-            scores = f"\n\nTest results:\n{scores}"
+            scores = f"<Test results>\n{scores}\n</Test results>"
 
-        return f"""Failing Example:
-For input: {example['example'].inputs}
-The prompt predicted: {example['run'].outputs}
+        return f"""<failing example>
+<input>
+{example['example'].inputs}
+</input>
+<prompt_prediction>
+{example['run'].outputs}
+</prompt_prediction>
 {ref_output}
 {scores}
-"""
+</failing example>"""
 
-    async def mutate(
-        self, population: list[Variant], train_examples: list[pm_types.Example]
-    ) -> list[pm_types.PromptWrapper]:
-        """Improve prompt using "gradient descent".
-
-        AKA feedback from failing examples.
-
-        1. Select failing examples
-        2. If no failing examples, return current prompt
-        3. Batch advisor over failing examples
-        4. Format advisor responses into a string
-        5. Run metaprompt over formatted advice
-        """
-        return await asyncio.gather(*(self.mutate_single(v) for v in population))
-
-    async def mutate_single(self, variant: Variant) -> pm_types.PromptWrapper:
-        failing_examples = self._format_failing_examples(variant.results)
-        if not failing_examples:
-            return variant.prompt
-        if self.max_batch_size and len(failing_examples) > self.max_batch_size:
-            random.shuffle(failing_examples)
-            failing_examples = failing_examples[: self.max_batch_size]
-        existing_prompt = variant.prompt.get_prompt_str_in_context()
-        with ls.trace(
-            name="Compute Gradient",
-            inputs={
-                "failing_examples": "\n".join(failing_examples),
-                "existing_prompt": existing_prompt,
-            },
-        ) as rt:
-            advice_msg = await self.model.ainvoke(
-                GRADIENT_DESCENT_GENERATION_PROMPT.format(
-                    existing_prompt=existing_prompt,
-                    failing_examples="\n".join(failing_examples),
+    def _format_passing_examples(self, results: list[ExperimentResultRow]) -> str:
+        """Format examples that pass the score threshold into a string for analysis."""
+        passing = []
+        for r in results:
+            # Consider "passing" if all evaluation scores meet or exceed threshold
+            if all(
+                (
+                    eval_result.score is not None
+                    and eval_result.score >= self.score_threshold
                 )
-            )
-            rt.add_outputs({"output": advice_msg})
-        with ls.trace(
-            name="Apply Gradient",
-            inputs={"existing_prompt": existing_prompt, "feedback": advice_msg.content},
-        ):
-            prompt_output = await create_extractor(
-                self.model,
-                tools=[pm_types.prompt_schema(variant.prompt)],
-                tool_choice="OptimizedPromptOutput",
-            ).ainvoke(
-                GRADIENT_DESCENT_APPLICATION_PROMPT.format(
-                    existing_prompt=existing_prompt,
-                    feedback=advice_msg.content,
-                )
-            )
-            prompt_output = cast(
-                pm_types.OptimizedPromptOutput, prompt_output["responses"][0]
-            )
-            rt.add_outputs({"output": prompt_output})
+                for eval_result in r["evaluation_results"]["results"]
+            ):
+                passing.append(self._format_passing_example(r))
 
-        candidate = pm_types.PromptWrapper.from_prior(
-            variant.prompt, prompt_output.improved_prompt
+        if not passing:
+            return ""
+        random.shuffle(passing)
+        # Only include the section header if we have examples
+        return "\n\n## Cases it gets right: ##\n" + "\n".join(
+            passing[: self.passing_num]
         )
 
-        pm_utils.print_rich_diff(
-            variant.prompt.get_prompt_str_in_context(),
-            candidate.get_prompt_str_in_context(),
-            "Mutated Prompt",
-        )
-        return candidate
+    def _format_passing_example(self, example: ExperimentResultRow) -> str:
+        """Format a single passing example into a string."""
+        outputs = example["example"].outputs
+        scores = []
+        for eval_result in example["evaluation_results"]["results"]:
+            scores.append(
+                f"- {eval_result.key}: {eval_result.score}"
+                f"{f' (Comment: {eval_result.comment})' if eval_result.comment else ''}"
+            )
+
+        scores = "\n".join(scores)
+        if scores:
+            scores = f"<test results>\n{scores}\n</test results>"
+
+        return f"""
+<passing example>
+<input>
+{example['example'].inputs}
+</input>
+<prompt_prediction>
+{example['run'].outputs}
+</prompt_prediction>
+<expected>
+{outputs if outputs else ''}
+</expected>
+{scores}
+</passing example>"""
 
 
-SEMANTIC_MUTATION_PROMPT = """You are a mutator. Given a prompt, your task is to generate another prompt with the same semantic meaning and intentions.
+PROMPT_TECHNIQUES = [
+    "Rephrase using different but equivalent words.",
+    "Restructure using a different format.",
+    "Add challenging, distinct few-shot examples.",
+    "Add thought trajectories over challenging examples.",
+    "Try to simplify the prompt without losing meaning or quality.",
+    "",
+]
+
+SEMANTIC_MUTATION_PROMPT = """Given a prompt, your task is to generate another prompt with the same semantic meaning. {technique}
 
 # Example:
 current prompt: Classify the sentiment of the following sentence as either negative or positive:
@@ -281,22 +401,57 @@ mutated prompt:
 
 
 class SemanticMutation(Mutation):
+    def __init__(
+        self,
+        *,
+        model: optimizers.MODEL_TYPE | None = None,
+        stop_at_population_limit: bool = False,
+        population_limit: int = 10,
+        **kwargs,
+    ):
+        super().__init__(model=model)
+        self.stop_at_population_limit = stop_at_population_limit
+        self.population_limit = population_limit
+        self.techniques = PROMPT_TECHNIQUES
+
+    @ls.traceable
     async def mutate(
         self, population: list[Variant], train_examples: list[pm_types.Example]
     ) -> list[pm_types.PromptWrapper]:
-        return await asyncio.gather(*(self.mutate_single(v) for v in population))
+        if self.stop_at_population_limit:
+            remaining = self.population_limit - len(population)
+            multiply = math.ceil(remaining / len(population))
+            to_process = random.sample(population * multiply, remaining)
+        else:
+            to_process = population
+        techniques = self.techniques.copy()
+        random.shuffle(techniques)
+        return await asyncio.gather(
+            *(
+                self.mutate_single(v, techniques[i % len(techniques)])
+                for i, v in enumerate(to_process)
+            )
+        )
 
-    async def mutate_single(self, variant: Variant) -> pm_types.PromptWrapper:
+    @ls.traceable
+    async def mutate_single(
+        self, variant: Variant, technique: str
+    ) -> pm_types.PromptWrapper:
         existing_prompt = variant.prompt.get_prompt_str_in_context()
+
         with ls.trace(
             name="Semantic Mutation",
-            inputs={"existing_prompt": existing_prompt},
+            inputs={"existing_prompt": existing_prompt, "technique": technique},
         ) as rt:
             prompt_output = await create_extractor(
                 self.model,
                 tools=[pm_types.prompt_schema(variant.prompt)],
                 tool_choice="OptimizedPromptOutput",
-            ).ainvoke(SEMANTIC_MUTATION_PROMPT.format(existing_prompt=existing_prompt))
+            ).ainvoke(
+                SEMANTIC_MUTATION_PROMPT.format(
+                    existing_prompt=existing_prompt, technique=technique
+                )
+            )
             prompt_output = cast(
                 pm_types.OptimizedPromptOutput, prompt_output["responses"][0]
             )
@@ -309,12 +464,12 @@ class SemanticMutation(Mutation):
         pm_utils.print_rich_diff(
             variant.prompt.get_prompt_str_in_context(),
             candidate.get_prompt_str_in_context(),
-            "Mutated Prompt",
+            f"{self.__class__.__name__} Mutated Prompt",
         )
         return candidate
 
 
-EDA_PROMPT = """You are a mutator. Given a series of prompts, your task is to generate another prompt with the same semantic meaning and intentions.
+EDA_PROMPT = """Given a series of prompts, your task is to generate another prompt with the same semantic meaning and intentions.
 
 ## Existing Prompts ##
 {existing_prompts}
@@ -322,7 +477,7 @@ EDA_PROMPT = """You are a mutator. Given a series of prompts, your task is to ge
 The newly mutated prompt is:
 """
 
-EDA_INDEX_PROMPT = """You are a mutator. Given a series of prompts, your task is to generate another prompt with the same semantic meaning and intentions. The series of prompts are ranked by their quality from best to worst.
+EDA_INDEX_PROMPT = """Given a series of prompts, your task is to generate another prompt with the same semantic meaning and intentions. The series of prompts are ranked by their quality from best to worst.
 
 ## Existing Prompts ##
 {existing_prompts}
@@ -347,6 +502,7 @@ class EdaMutation(Mutation):
         random.shuffle(cluster)
         return cluster
 
+    @ls.traceable
     async def mutate(
         self, population: list[Variant], train_examples: list[pm_types.Example]
     ) -> list[pm_types.PromptWrapper]:
@@ -389,7 +545,7 @@ class EdaMutation(Mutation):
         pm_utils.print_rich_diff(
             cluster[0].prompt.get_prompt_str_in_context(),
             candidate.get_prompt_str_in_context(),
-            "Distilled Prompt",
+            f"{self.__class__.__name__} Distilled Prompt",
         )
         return candidate
 
@@ -405,7 +561,10 @@ class EDAIndexMutation(EdaMutation):
         super().__init__(model=model, prompt=prompt)
 
     def _prepare_cluster(self, cluster: list[Variant]) -> list[Variant]:
-        return sorted(cluster, key=lambda v: v.fitness, reverse=True)
+        # Note: we are DELIBERATELY lying to the LLM saying the most fit prompt is first.
+        # This is mean to counter-act the position bias inherent in some LLMs.
+        # Need to benchmark further whether this actually has the desired effect.
+        return sorted(cluster, key=lambda v: v.fitness, reverse=False)
 
 
 CROSS_OVER_PROMPT = """You are a mutator who is familiar with the concept of cross-over in genetic algorithms, namely combining the genetic information of two parents to generate new offspring. Given two parent prompts, you will perform a cross-over to generate an offspring prompt that covers the same semantic meaning as both parents.
@@ -432,12 +591,14 @@ class CrossoverMutation(Mutation):
         src = sorted(population, key=lambda v: v.fitness, reverse=True)
         return [(src[0], src[2])]
 
+    @ls.traceable
     async def mutate(
         self, population: list[Variant], train_examples: list[pm_types.Example]
     ) -> list[pm_types.PromptWrapper]:
         pairs = self.produce_pairs(population)
         return await asyncio.gather(*(self.merge(pair) for pair in pairs))
 
+    @ls.traceable
     async def merge(self, pair: tuple[Variant, Variant]) -> pm_types.PromptWrapper:
         cluster_prompts = [v.prompt.get_prompt_str_in_context() for v in pair]
         existing_prompts = "\n".join(cluster_prompts)
@@ -466,7 +627,7 @@ class CrossoverMutation(Mutation):
         pm_utils.print_rich_diff(
             pair[0].prompt.get_prompt_str_in_context(),
             candidate.get_prompt_str_in_context(),
-            "Distilled Prompt",
+            f"{self.__class__.__name__} Distilled Prompt",
         )
         return candidate
 
@@ -520,13 +681,17 @@ class PhaseConfig(TypedDict):
 def ensure_phase_config(config: dict | PhaseConfig) -> PhaseConfig:
     if "mutation" not in config:
         raise ValueError(f"Phase config must specify a mutation. Got {config}")
-    return PhaseConfig(
-        mutation=config["mutation"],
-        population_size=config.get("population_size", 5),
-        improvement_threshold=config.get(
-            "improvement_threshold", 0.2
-        ),  # 20% "better" - kinda arbitrary
-        max_attempts=config.get("max_attempts", 5),
+    return cast(
+        PhaseConfig,
+        {
+            **config,
+            "mutation": config["mutation"],
+            "population_limit": config.get("population_limit", 5),
+            "improvement_threshold": config.get(
+                "improvement_threshold", 0.6
+            ),  # 90% "better" - kinda arbitrary
+            "max_attempts": config.get("max_attempts", 5),
+        },
     )
 
 

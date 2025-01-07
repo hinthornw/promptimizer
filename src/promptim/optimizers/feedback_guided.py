@@ -1,4 +1,4 @@
-from typing import Optional, Literal, Sequence
+from typing import Optional, Literal, Sequence, cast
 from langsmith.evaluation._arunner import ExperimentResultRow
 from dataclasses import dataclass, field
 from promptim import types as pm_types, _utils as pm_utils
@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 import langsmith as ls
 import random
 from promptim.optimizers.metaprompt import DEFAULT_METAPROMPT
+from trustcall import create_extractor
 
 _DEFAULT_RECOMMENDATION_PROMPT = """You are giving feedback on the performance of an AI model.
 
@@ -182,7 +183,11 @@ The prompt predicted: {example['run'].outputs}
         all_recommendations = "\n".join(formatted_recommendations)
 
         # 5. Use consolidated recommendations to guide final prompt improvement
-        chain = self.model.with_structured_output(pm_types.OptimizedPromptOutput)
+        chain = create_extractor(
+            self.model,
+            tools=[pm_types.prompt_schema(current_prompt)],
+            tool_choice="OptimizedPromptOutput",
+        )
         inputs = {
             "current_prompt": current_prompt.get_prompt_str_in_context(),
             "task_description": task.describe(),
@@ -193,10 +198,12 @@ The prompt predicted: {example['run'].outputs}
                 else "N/A"
             ),
         }
-
-        prompt_output: pm_types.OptimizedPromptOutput = await chain.ainvoke(
-            self.meta_prompt.format(**inputs)
-        )
+        with ls.trace("Apply Recommendations", inputs=inputs) as rt:
+            prompt_output = await chain.ainvoke(self.meta_prompt.format(**inputs))
+            prompt_output = cast(
+                pm_types.OptimizedPromptOutput, prompt_output["responses"][0]
+            )
+            rt.add_outputs({"prompt_output": prompt_output})
 
         candidate = pm_types.PromptWrapper.from_prior(
             current_prompt, prompt_output.improved_prompt

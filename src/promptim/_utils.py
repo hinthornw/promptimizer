@@ -34,7 +34,9 @@ def get_var_healer(vars: set[str], all_required: bool = False):
     uuid_to_var = {v: k for k, v in var_to_uuid.items()}
 
     def escape(input_string: str) -> str:
-        return re.sub(r"([{}])", r"\1\1", input_string, flags=re.DOTALL)
+        result = re.sub(r"(?<!\{)\{(?!\{)", "{{", input_string)
+        result = re.sub(r"(?<!\})\}(?!\})", "}}", result)
+        return result
 
     if not vars:
         return escape
@@ -42,9 +44,14 @@ def get_var_healer(vars: set[str], all_required: bool = False):
     mask_pattern = re.compile("|".join(map(re.escape, var_to_uuid.keys())))
     unmask_pattern = re.compile("|".join(map(re.escape, var_to_uuid.values())))
 
+    strip_to_optimize_pattern = re.compile(
+        r"<TO_OPTIMIZE.*?>|</TO_OPTIMIZE>", re.MULTILINE | re.DOTALL
+    )
+
     def assert_all_required(input_string: str) -> str:
         if not all_required:
             return input_string
+
         missing = [var for var in vars if f"{{{var}}}" not in input_string]
         if missing:
             raise ValueError(f"Missing required variable: {', '.join(missing)}")
@@ -58,6 +65,10 @@ def get_var_healer(vars: set[str], all_required: bool = False):
         return unmask_pattern.sub(lambda m: uuid_to_var[m.group(0)], input_string)
 
     def pipe(input_string: str) -> str:
-        return unmask(escape(mask(assert_all_required(input_string))))
+        return unmask(
+            strip_to_optimize_pattern.sub(
+                "", escape(mask(assert_all_required(input_string)))
+            )
+        )
 
     return pipe

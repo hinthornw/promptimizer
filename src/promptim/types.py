@@ -2,7 +2,6 @@ import copy
 import json
 from dataclasses import dataclass, field, fields
 from typing import Callable, Optional, Any, Protocol
-import uuid
 from uuid import UUID
 
 import langsmith as ls
@@ -66,22 +65,16 @@ class PromptConfig:
 class PromptWrapper(PromptConfig):
     _cached: ChatPromptTemplate | None = None
     _postlude: RunnableBinding | BaseChatModel | None = None
-    lineage: str | None = None
+    lineage: list["PromptWrapper"] | None = None
+    extra: dict | None = None
 
     @classmethod
     def from_config(cls, config: PromptConfig):
-        id_ = uuid.uuid5(
-            uuid.NAMESPACE_DNS,
-            str(
-                config.identifier,
-            ),
-        )
         return cls(
             identifier=config.identifier,
             prompt_str=config.prompt_str,
             model_config=config.model_config,
             which=config.which,
-            lineage=id_,
         )
 
     def load(self, client: ls.Client | None = None) -> ChatPromptTemplate:
@@ -173,21 +166,26 @@ class PromptWrapper(PromptConfig):
         return "\n".join(formatted)
 
     @classmethod
-    def from_prior(cls, prior: "PromptWrapper", output: str):
+    def from_prior(
+        cls, prior: "PromptWrapper", output: str, extra_info: dict | None = None
+    ):
         copied = prior._cached
         if not copied:
             raise ValueError("Cannot load from unloaded prior.")
+        extra_info = extra_info or {}
         copied = copy.deepcopy(copied)
         tmpl = copied.messages[prior.which]
         tmpl.prompt.template = output  # type: ignore
-        id_ = str(uuid.uuid5(uuid.NAMESPACE_DNS, output))
+        lineage = prior.lineage.copy() if prior.lineage else []
+        lineage.append(prior)
         return cls(
             identifier=prior.identifier,
             prompt_str=prior.prompt_str,
             which=prior.which,
             _cached=copied,
             _postlude=prior._postlude,
-            lineage=str(prior.lineage) + "." + str(id_),
+            lineage=lineage,
+            extra=extra_info,
         )
 
     def push_prompt(
@@ -301,12 +299,14 @@ def prompt_schema(og_prompt: PromptWrapper) -> type[OptimizedPromptOutput]:
     if required_variables:
         variables_str = ", ".join(f"{{{var}}}" for var in required_variables)
         prompt_description = (
-            " Must retain all of the following f-string variables from the "
-            f"original prompt: {variables_str}. No other input variables are "
-            "allowed."
+            f" The prompt section being optimized contains the following f-string variables to be templated in: {variables_str}."
+            " You must retain all of these variables in your improved prompt. No other input variables are allowed."
         )
     else:
-        prompt_description = "No input variables are required."
+        prompt_description = (
+            " The prompt section being optimized contains no input f-string variables."
+            " Any brackets {{ foo }} you emit will be escaped and not used."
+        )
 
     pipeline = get_var_healer(set(required_variables), all_required=True)
 
@@ -317,7 +317,8 @@ def prompt_schema(og_prompt: PromptWrapper) -> type[OptimizedPromptOutput]:
             description="First, analyze the current results and plan improvements to reconcile them."
         )
         improved_prompt: str = Field(
-            description=f"The improved prompt text in f-string format.{prompt_description}"
+            description="The improved prompt text to replace the text contained within the"
+            f" <TO_OPTIMIZE> and </TO_OPTIMIZE> tags, in f-string format. Do not includde <TO_OPTIMIZE> in your response. {prompt_description}"
         )
 
         @model_validator(mode="before")

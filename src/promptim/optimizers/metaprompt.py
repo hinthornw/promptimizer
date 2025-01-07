@@ -5,7 +5,7 @@ from promptim import types as pm_types
 from promptim import _utils as pm_utils
 from promptim.optimizers import base as optimizers
 from typing_extensions import Literal
-
+from trustcall import create_extractor
 
 DEFAULT_METAPROMPT = """You are an expert prompt engineer tasked with improving prompts for AI tasks.
 You will use all means necessary to optimize the scores for the provided prompt so that the resulting model can
@@ -136,7 +136,11 @@ class MetaPromptOptimizer(optimizers.BaseOptimizer):
         )[-5:]
 
         annotated_results = self._format_results(results)
-        chain = self.model.with_structured_output(pm_types.OptimizedPromptOutput)
+        chain = create_extractor(
+            self.model,
+            tools=[pm_types.prompt_schema(current_prompt)],
+            tool_choice="OptimizedPromptOutput",
+        )
         inputs = self.meta_prompt.format(
             current_prompt=current_prompt.get_prompt_str_in_context(),
             annotated_results=annotated_results,
@@ -147,7 +151,8 @@ class MetaPromptOptimizer(optimizers.BaseOptimizer):
                 else "N/A"
             ),
         )
-        prompt_output: pm_types.OptimizedPromptOutput = await chain.ainvoke(inputs)
+        response = await chain.ainvoke(inputs)
+        prompt_output: pm_types.OptimizedPromptOutput = response["responses"][0]
         candidate = pm_types.PromptWrapper.from_prior(
             current_prompt, prompt_output.improved_prompt
         )

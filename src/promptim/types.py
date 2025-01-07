@@ -51,6 +51,12 @@ class PromptConfig:
         default=0,
         metadata={"description": "Index of the message to optimize within the prompt."},
     )
+    upload_to: str | None = field(
+        default=None,
+        metadata={
+            "description": "Upload the prompt to the hub repository. Mutually exclusive with identifier."
+        },
+    )
 
     def __post_init__(self):
         if self.identifier and self.prompt_str:
@@ -59,6 +65,8 @@ class PromptConfig:
             )
         elif not self.identifier and not self.prompt_str:
             raise ValueError("Must provide either identifier or prompt_str.")
+        if self.identifier and not self.upload_to:
+            self.upload_to = self.identifier
 
 
 @dataclass(kw_only=True)
@@ -186,17 +194,19 @@ class PromptWrapper(PromptConfig):
             _postlude=prior._postlude,
             lineage=lineage,
             extra=extra_info,
+            upload_to=prior.upload_to,
         )
 
     def push_prompt(
         self,
         *,
-        identifier: Optional[str] = None,
         include_model_info: bool = True,
         client: ls.Client,
     ) -> str:
+        if not self.upload_to:
+            raise ValueError("Cannot push prompt without an upload target.")
         prompt = self.load(client)
-        identifier = identifier or self.identifier.rsplit(":", maxsplit=1)[0]
+        identifier = self.upload_to.rsplit(":", maxsplit=1)[0]
         try:
             if not include_model_info or not self._postlude:
                 new_id = client.push_prompt(identifier, object=prompt)

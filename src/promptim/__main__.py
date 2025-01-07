@@ -12,6 +12,7 @@ from datetime import datetime, timezone
 import click
 import langsmith as ls
 from langsmith.utils import LangSmithNotFoundError
+import inspect
 
 if TYPE_CHECKING:
     from langsmith import Client
@@ -47,18 +48,34 @@ def load_task(name_or_path: str):
         if "$schema" in config:
             del config["$schema"]
         evaluators_path = config["evaluators"]
+
         module_path, evaluators_variable = [
             part for part in evaluators_path.split(":") if part
         ]
+        if ".py" not in module_path:
+            # Assume it's like "my.module.path:fooo"
+            # and convert it to "my/module/path/foo.py"
+            module_path = module_path.replace(".", "/")
+            module_path += ".py"
         # First try to load it relative to the config path
         config_dir = os.path.dirname(name_or_path)
         relative_module_path = os.path.join(config_dir, module_path)
         if os.path.exists(relative_module_path):
             module_path = relative_module_path
+        else:
+            relative_module_path = os.path.join(
+                os.path.dirname(config_dir), module_path
+            )
+            if os.path.exists(relative_module_path):
+                module_path = relative_module_path
+        if not os.path.exists(module_path):
+            raise ValueError(f"Could not find evaluator module {module_path}")
         spec = importlib.util.spec_from_file_location("evaluators_module", module_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         evaluators = getattr(module, evaluators_variable)
+        if inspect.isfunction(evaluators):
+            evaluators = [evaluators]
         if not isinstance(evaluators, list):
             raise ValueError(
                 f"Expected evaluators to be a list, but got {type(evaluators).__name__}"
@@ -79,6 +96,18 @@ async def run(
     commit: bool = True,
 ):
     task, config, experiment_parent = load_task(task_name)
+    if (
+        "dataset" in config
+        and isinstance(config["dataset"], dict)
+        and "url" in config["dataset"]
+    ):
+        ls_client = ls.Client()
+        ds = ls_client.clone_public_dataset(
+            config["dataset"]["url"], dataset_name=config["dataset"]["name"]
+        )
+        config["dataset"] = ds.name
+        task.dataset = ds.name
+
     experiment_dir = os.path.join(
         experiment_parent,
         f"exp-{datetime.now(timezone.utc).strftime('%Y-%m-%d-%H-%M-%S')}",
@@ -120,7 +149,6 @@ async def run(
         )
     if commit and task.initial_prompt.identifier is not None:
         prompt.push_prompt(
-            identifier=task.initial_prompt.identifier.rsplit(":", maxsplit=1)[0],
             include_model_info=True,
             client=optimizer.client,
         )

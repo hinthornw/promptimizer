@@ -1,11 +1,11 @@
 from typing import List, Union, Optional, cast
 from rich.progress import Progress, Live
-from collections import deque
 
 from promptim import types as pm_types
 from promptim.trainer import PromptTrainer
 
 from promptim.optimizers import base as optimizers
+from promptim import _utils as pm_utils
 from promptim.algorithms.base import BaseAlgorithm, AlgorithmConfig
 from promptim.algorithms.phaseevo import mutations
 from dataclasses import dataclass, field
@@ -36,25 +36,6 @@ def default_curriculum():
     ]
 
 
-def _get_llm_calls(rt: ls.RunTree) -> int | None:
-    runs = deque([rt])
-    kept = []
-    while runs:
-        run = runs.popleft()
-        if run.run_type == "llm":
-            kept.append(run)
-        runs.extend(run.child_runs)
-    all_toks = [
-        toks
-        for toks in (
-            (r.extra.get("usage_metadata") or {}).get("total_tokens") for r in kept
-        )
-        if toks is not None
-    ]
-    if all_toks:
-        return sum(all_toks)
-
-
 @dataclass(kw_only=True)
 class EvolutionaryConfig(AlgorithmConfig):
     """Configuration for evolutionary algorithms."""
@@ -83,7 +64,10 @@ class PhaseEvoAlgorithm(BaseAlgorithm[EvolutionaryConfig]):
         experiment_name: str = "Prompt Optimization",
         baseline_scores: Optional[dict] = None,
         baseline_experiment_results: Optional[list] = None,
-    ) -> tuple[pm_types.PromptWrapper, float]:
+    ) -> tuple[
+        pm_types.PromptWrapper,
+        float,
+    ]:
         from rich.console import Group
         from rich.panel import Panel
         from rich import box
@@ -274,11 +258,20 @@ class PhaseEvoAlgorithm(BaseAlgorithm[EvolutionaryConfig]):
                     avg_fitness = sum(fitness_scores) / len(fitness_scores)
                     min_fitness = min(fitness_scores)
                     max_fitness = max(fitness_scores)
+                    trainer.log_metric("score", value=max_fitness, x=i, x_label="epoch")
+                    tokens_used = pm_utils.get_token_usage()
+                    if tokens_used is not None:
+                        token_usage.append(tokens_used)
+                        trainer.log_metric(
+                            "score",
+                            value=max_fitness,
+                            x=tokens_used,
+                            x_label="total tokens",
+                        )
 
                     # Update fitness history and phase points
                     fitness_history.append(max_fitness)
                     phase_points[phase_names[i]] = len(fitness_history) - 1
-                    token_usage.append(_get_llm_calls(rt))
 
                     # Update progress bars
                     metrics_progress.update(

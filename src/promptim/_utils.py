@@ -6,6 +6,8 @@ from rich.panel import Panel
 
 import re
 import uuid
+import langsmith as ls
+from collections import deque
 
 
 def _colorize_diff(diff):
@@ -72,3 +74,29 @@ def get_var_healer(vars: set[str], all_required: bool = False):
         )
 
     return pipe
+
+
+def get_token_usage() -> int | None:
+    rt = ls.get_current_run_tree()
+    if not rt:
+        return
+    runs = deque([rt])
+    kept = []
+    while runs:
+        run = runs.popleft()
+        if run.run_type == "llm":
+            kept.append(run)
+        runs.extend(run.child_runs)
+    all_toks = []
+    for r in kept:
+        usage = ((r.outputs or {}).get("llm_output") or {}).get("usage")
+        if not usage:
+            continue
+        input_tokens = usage.get("input_tokens")
+        output_tokens = usage.get("output_tokens")
+        if input_tokens is None or output_tokens is None:
+            continue
+        all_toks.append(output_tokens + input_tokens)
+
+    if all_toks:
+        return sum(all_toks)

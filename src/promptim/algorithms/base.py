@@ -55,7 +55,7 @@ class BaseAlgorithm(Generic[C], ABC):
         experiment_name: str = "Prompt Optimization",
         baseline_scores: Optional[dict] = None,
         baseline_experiment_results: Optional[list] = None,
-    ) -> tuple[pm_types.PromptWrapper, float]:
+    ) -> tuple[pm_types.PromptWrapper, float, dict]:
         """
         Execute the training/evolution procedure using the trainer's capabilities.
 

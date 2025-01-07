@@ -7,6 +7,7 @@ from promptim import types as pm_types
 from promptim.trainer import PromptTrainer
 
 from promptim.algorithms.base import BaseAlgorithm, AlgorithmConfig
+from promptim import _utils as pm_utils
 
 
 class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
@@ -195,6 +196,16 @@ class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
                 else:
                     progress.console.print(
                         f"Score {dev_score:.4f} did not surpass best score {best_score:.4f}"
+                    )
+
+                trainer.log_metric("score", value=best_score, x=epoch, x_label="epoch")
+                tokens_used = pm_utils.get_token_usage()
+                if tokens_used is not None:
+                    trainer.log_metric(
+                        "score",
+                        value=best_score,
+                        x=tokens_used,
+                        x_label="total tokens",
                     )
                 history.append([best_prompt])
 

@@ -15,6 +15,8 @@ from uuid import UUID
 from dataclasses import asdict, is_dataclass
 import datetime
 import functools
+from concurrent.futures import ThreadPoolExecutor
+import os
 
 import langsmith as ls
 from langchain.chat_models import init_chat_model
@@ -63,6 +65,7 @@ class PromptTrainer:
         algorithm: Optional["BaseAlgorithm"] = None,
         client: Optional[ls.Client] = None,
         seed: int = 42,
+        experiment_dir: str = "~",
     ):
         """Initialize the trainer with a specific optimization algorithm.
 
@@ -79,14 +82,19 @@ class PromptTrainer:
         self._loop = asyncio.get_running_loop()
         self._aqueue: dict[asyncio.Future, Callable[[], Any]] = {}
         self._task = self._loop.create_task(_run(self._aqueue, weakref.ref(self)))
+        self._experiment_dir = experiment_dir
+        self._threadpool = ThreadPoolExecutor(max_workers=1)
 
     async def wait_for_all(self) -> None:
         """Wait for all queued tasks to complete."""
         if self._aqueue:
             await asyncio.gather(*self._aqueue.keys())
+        self._threadpool.shutdown(wait=True)
 
     @classmethod
-    def from_config(cls, config: dict | pm_config.Config, algo_config: dict):
+    def from_config(
+        cls, config: dict | pm_config.Config, algo_config: dict, experiment_dir: str
+    ):
         """Create a PromptTrainer from a configuration dictionary.
 
         Args:
@@ -108,7 +116,15 @@ class PromptTrainer:
         algorithm = pm_algorithms.load_algorithm(
             algo_config, optimizer_model=optimizer.model
         )
-        return cls(optimizer=optimizer, algorithm=algorithm)
+        return cls(
+            optimizer=optimizer, algorithm=algorithm, experiment_dir=experiment_dir
+        )
+
+    def save_config(self) -> dict:
+        return {
+            "optimizer": self.optimizer.config,
+            "algorithm": self.algorithm.config,
+        }
 
     async def train(
         self,
@@ -575,6 +591,21 @@ class PromptTrainer:
             key: sum(values) / len(values) if values else 0.0
             for key, values in scores.items()
         }
+
+    def log_metric(
+        self, metric_name: str, /, value: float, x: int | float, x_label: str = "epoch"
+    ):
+        self._threadpool.submit(self._log_metric, metric_name, value, x, x_label)
+
+    def _log_metric(
+        self, metric_name: str, value: float, x: int | float, x_label: str = "epoch"
+    ):
+        fname = os.path.join(self._experiment_dir, "metrics.csv")
+        nexist = not os.path.exists(fname)
+        with open(fname, "a") as f:
+            if nexist:
+                f.write("x,y,x_label,metric\n")
+            f.write(f"{x},{value},{x_label},{metric_name}\n")
 
     async def _fetch_baseline_metrics(self, experiment_id: UUID) -> dict:
         """Fetches metrics for a baseline experiment."""

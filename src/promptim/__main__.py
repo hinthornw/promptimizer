@@ -7,6 +7,7 @@ import os
 import sys
 import time
 from typing import TYPE_CHECKING, Optional
+from datetime import datetime, timezone
 
 import click
 import langsmith as ls
@@ -38,7 +39,7 @@ def load_task(name_or_path: str):
 
     task = get_tasks(name_or_path)
     if task:
-        return task, {}
+        return task, {}, "~"
     # If task is not in predefined tasks, try to load from file
     try:
         with open(name_or_path, "r", encoding="utf-8") as f:
@@ -63,7 +64,7 @@ def load_task(name_or_path: str):
                 f"Expected evaluators to be a list, but got {type(evaluators).__name__}"
             )
         task = Task.from_dict({**config, "evaluators": evaluators})
-        return task, config
+        return task, config, os.path.join(os.path.dirname(name_or_path), "~")
     except Exception as e:
         raise ValueError(f"Could not load task from {name_or_path}: {e}")
 
@@ -77,18 +78,38 @@ async def run(
     debug: bool = False,
     commit: bool = True,
 ):
-    task, config = load_task(task_name)
+    task, config, experiment_parent = load_task(task_name)
+    experiment_dir = os.path.join(
+        experiment_parent,
+        f"exp-{datetime.now(timezone.utc).strftime('%Y-%m-%d-%H-%M-%S')}",
+    )
+    os.makedirs(experiment_dir, exist_ok=True)
+
     from promptim.trainer import PromptTrainer
+
+    algo_config = {
+        "batch_size": batch_size,
+        "train_size": train_size,
+        "epochs": epochs,
+        "debug": debug,
+    } | (config.get("algorithm") or {})
+
+    with open(os.path.join(experiment_dir, "config.json"), "w", encoding="utf-8") as f:
+        config_print = json.dumps(
+            {
+                **config,
+                "algorithm": algo_config,
+            },
+            indent=2,
+        )
+        f.write(config_print)
+        print(f"Experiment: {experiment_dir}")
+        print(config_print)
 
     optimizer = PromptTrainer.from_config(
         config.get("optimizer", config.get("optimizer_config", {})),
-        algo_config={
-            "batch_size": batch_size,
-            "train_size": train_size,
-            "epochs": epochs,
-            "debug": debug,
-        }
-        | (config.get("algorithm") or {}),
+        algo_config=algo_config,
+        experiment_dir=experiment_dir,
     )
 
     with ls.tracing_context(project_name="Optim"):

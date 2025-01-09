@@ -1,0 +1,24 @@
+{
+  "name": "tooluse-finance",
+  "dataset": {
+    "name": "finance_tooluse_dataset",
+    "description": "A dataset of finance scenarios requiring tool use",
+    "url": "https://smith.langchain.com/public/4e9220bb-d4f7-43ae-819b-4580811470fb/d"
+  },
+  "description": "Use tools for finance related tasks",
+  "evaluators": "tooluse_finance.evaluators:tool_use_evaluator",
+  "evaluator_descriptions": {
+    "accuracy": "Evaluates if the tool usage matches the expected behavior"
+  },
+  "optimizer": {
+    "model": {
+      "model": "claude-3-5-sonnet-20241022",
+      "max_tokens_to_sample": 8192
+    }
+  },
+  "initial_prompt": {
+    "identifier": "emily-sentiment/tooluse-finance:b9e0638f",
+    "upload_to": "langchain-ai/tooluse-finance"
+  },
+  "$schema": "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+}

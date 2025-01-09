@@ -1,0 +1,19 @@
+{
+  "name": "extraction-code",
+  "dataset": "code_extraction_dataset",
+  "description": "Extract function name, parameters, and return type from code",
+  "evaluators": "extract_code.evaluators:accuracy_evaluator",
+  "evaluator_descriptions": {
+    "accuracy": "Evaluates if the extracted information matches the reference"
+  },
+  "optimizer": {
+    "model": {
+      "model": "claude-3-5-sonnet-20241022"
+    }
+  },
+  "initial_prompt": {
+    "identifier": "emily-sentiment/extraction-code:15288745",
+    "upload_to": "langchain-ai/extraction-code"
+  },
+  "$schema": "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+}

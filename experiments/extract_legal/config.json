@@ -1,0 +1,19 @@
+{
+  "name": "extraction-legal",
+  "dataset": "legal_extraction_dataset",
+  "description": "Extract key information from legal documents",
+  "evaluators": "extract_legal.evaluators:accuracy_evaluator",
+  "evaluator_descriptions": {
+    "accuracy": "Evaluates if the extracted information matches the reference"
+  },
+  "optimizer": {
+    "model": {
+      "model": "claude-3-5-sonnet-20241022",
+      "max_tokens_to_sample": 8192
+    }
+  },
+  "initial_prompt": {
+    "identifier": "emily-sentiment/extraction-legal:8791ad13",
+    "upload_to": "langchain-ai/extraction-legal"
+  }
+}

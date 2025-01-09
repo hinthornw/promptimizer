@@ -1,0 +1,3 @@
+{"optimizer": {"model": {"model": "claude-3-5-sonnet-20241022","max_tokens_to_sample": 8192} }}
+{"optimizer": {"model": {"model": "openai:gpt-4o"} }}
+{"optimizer": {"model": {"model": "openai:o1-preview"} }}

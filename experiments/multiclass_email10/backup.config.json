@@ -1,0 +1,24 @@
+{
+  "name": "multiclass_email10",
+  "dataset": {
+    "name": "multiclass_email10",
+    "description": "A dataset of emails with their detailed emotion classifications",
+    "url": "https://smith.langchain.com/public/18105687-0b24-404a-8679-e13fe6a5e383/d"
+  },
+  "description": "Classify emails into 10 sentiment categories",
+  "evaluators": "multiclass_email10.evaluators:accuracy_evaluator",
+  "evaluator_descriptions": {
+    "accuracy": "Evaluates if the predicted category matches the reference class"
+  },
+  "optimizer": {
+    "model": {
+      "model": "claude-3-5-sonnet-20241022",
+      "max_tokens_to_sample": 8192
+    }
+  },
+  "initial_prompt": {
+    "identifier": "emily-sentiment/multiclass-email10:4f6fd82a",
+    "upload_to": "langchain-ai/multiclass-email10"
+  },
+  "$schema": "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+}

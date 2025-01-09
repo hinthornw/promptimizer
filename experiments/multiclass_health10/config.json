@@ -1,0 +1,19 @@
+{
+  "name": "multiclass-health10",
+  "dataset": "multiclass-health10",
+  "description": "Classify health-related text into 10 categories",
+  "evaluators": "multiclass_health10.evaluators:accuracy_evaluator",
+  "evaluator_descriptions": {
+    "accuracy": "Evaluates if the predicted category matches the reference class"
+  },
+  "optimizer": {
+    "model": {
+      "model": "claude-3-5-sonnet-20241022"
+    }
+  },
+  "initial_prompt": {
+    "identifier": "emily-sentiment/multiclass-health10:72da772b",
+    "upload_to": "langchain-ai/multiclass-health10"
+  },
+  "$schema": "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+}

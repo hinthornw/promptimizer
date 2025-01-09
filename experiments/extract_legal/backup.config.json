@@ -1,0 +1,23 @@
+{
+  "name": "extraction-legal",
+  "dataset": {
+    "name": "legal_extraction_dataset",
+    "description": "A dataset of legal documents with extracted information",
+    "url": "https://smith.langchain.com/public/23723ece-9e09-4564-9ffd-e3243360bdcd/d"
+  },
+  "description": "Extract key information from legal documents",
+  "evaluators": "extract_legal.evaluators:accuracy_evaluator",
+  "evaluator_descriptions": {
+    "accuracy": "Evaluates if the extracted information matches the reference"
+  },
+  "optimizer": {
+    "model": {
+      "model": "claude-3-5-sonnet-20241022",
+      "max_tokens_to_sample": 8192
+    }
+  },
+  "initial_prompt": {
+    "identifier": "emily-sentiment/extraction-legal:8791ad13",
+    "upload_to": "langchain-ai/extraction-legal"
+  }
+}

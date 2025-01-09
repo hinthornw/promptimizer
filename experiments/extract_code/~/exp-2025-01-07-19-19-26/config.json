@@ -1,0 +1,25 @@
+{
+  "name": "extraction-code",
+  "dataset": "code_extraction_dataset",
+  "description": "Extract function name, parameters, and return type from code",
+  "evaluators": "extract_code.evaluators:accuracy_evaluator",
+  "evaluator_descriptions": {
+    "accuracy": "Evaluates if the extracted information matches the reference"
+  },
+  "optimizer": {
+    "model": {
+      "model": "openai:gpt-o1",
+      "max_tokens_to_sample": 8192
+    }
+  },
+  "initial_prompt": {
+    "identifier": "emily-sentiment/extraction-code:15288745",
+    "upload_to": "langchain-ai/extraction-code"
+  },
+  "algorithm": {
+    "batch_size": 40,
+    "train_size": 40,
+    "epochs": 2,
+    "debug": false
+  }
+}

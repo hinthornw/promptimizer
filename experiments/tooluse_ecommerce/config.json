@@ -1,0 +1,20 @@
+{
+  "name": "tooluse-ecommerce",
+  "dataset": "ecommerce_tooluse_dataset",
+  "description": "Use tools for e-commerce related tasks",
+  "evaluators": "tooluse_ecommerce.evaluators:tool_use_evaluator",
+  "evaluator_descriptions": {
+    "accuracy": "Evaluates if the tool usage matches the expected behavior"
+  },
+  "optimizer": {
+    "model": {
+      "model": "claude-3-5-sonnet-20241022",
+      "max_tokens_to_sample": 8192
+    }
+  },
+  "initial_prompt": {
+    "identifier": "emily-sentiment/tooluse-ecommerce:a34c2697",
+    "upload_to": "langchain-ai/tooluse-ecommerce"
+  },
+  "$schema": "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+}

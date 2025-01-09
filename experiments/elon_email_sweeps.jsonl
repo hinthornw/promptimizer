@@ -1,0 +1,10 @@
+// {"optimizer": {"kind": "metaprompt", "model": {"model": "openai:o1"} }}
+// {"optimizer": {"kind": "feedback_guided", "model": {"model": "openai:o1"} }}
+// {"optimizer": {"model": {"model": "openai:o1"} }, "algorithm": {"kind": "phaseevo"}}
+{"optimizer": {"kind": "metaprompt", "model": {"model": "claude-3-5-sonnet-20241022","max_tokens_to_sample": 8192} }}
+// {"optimizer": {"kind": "metaprompt", "model": {"model": "openai:gpt-4o"} }}
+// {"optimizer": {"kind": "metaprompt", "model": {"model": "openai:o1"} }}
+// {"optimizer": {"kind": "feedback_guided", "model": {"model": "claude-3-5-sonnet-20241022","max_tokens_to_sample": 8192} }}
+// {"optimizer": {"kind": "feedback_guided", "model": {"model": "openai:gpt-4o"} }}
+// {"optimizer": {"model": {"model": "claude-3-5-sonnet-20241022","max_tokens_to_sample": 8192} }, "algorithm": {"kind": "phaseevo"}}
+// {"optimizer": {"model": {"model": "openai:gpt-4o"} }, "algorithm": {"kind": "phaseevo"}}

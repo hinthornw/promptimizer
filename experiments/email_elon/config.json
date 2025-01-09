@@ -1,0 +1,19 @@
+{
+  "name": "email_elon",
+  "dataset": "email_elon",
+  "description": "Triage emails",
+  "evaluators": "email_elon.evaluators:accuracy_evaluator",
+  "evaluator_descriptions": {
+    "accuracy": "Evaluates if the predicted category matches the reference class"
+  },
+  "optimizer": {
+    "model": {
+      "model": "claude-3-5-sonnet-20241022"
+    }
+  },
+  "initial_prompt": {
+    "identifier": "elon_email:c8a3061d",
+    "upload_to": "elon_email"
+  },
+  "$schema": "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+}

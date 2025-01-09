@@ -201,22 +201,18 @@ class PromptWrapper(PromptConfig):
         self,
         *,
         include_model_info: bool = True,
-        client: ls.Client,
+        client: ls.Client | None = None,
     ) -> str:
         if not self.upload_to:
             raise ValueError("Cannot push prompt without an upload target.")
+        client = client or ls.Client()
         prompt = self.load(client)
         identifier = self.upload_to.rsplit(":", maxsplit=1)[0]
         try:
             if not include_model_info or not self._postlude:
                 new_id = client.push_prompt(identifier, object=prompt)
             else:
-                second = (
-                    self._postlude.first
-                    if isinstance(self._postlude, RunnableSequence)
-                    else self._postlude
-                )
-                seq = RunnableSequence(prompt, second)
+                seq = self._get_seq(client)
                 return self._push_seq(client, seq, identifier)
 
         except LangSmithConflictError:
@@ -232,11 +228,38 @@ class PromptWrapper(PromptConfig):
             .rsplit("/", maxsplit=1)
         )
 
+    def _get_seq(self, client: ls.Client | None = None):
+        prompt = self.load(client)
+        second = (
+            self._postlude.first
+            if isinstance(self._postlude, RunnableSequence)
+            else self._postlude
+        )
+        if second:
+            return RunnableSequence(prompt, second)
+        return prompt
+
     @staticmethod
     def _push_seq(client: ls.Client, seq: RunnableSequence, identifier: str):
         manifest = json.loads(dumps(seq))
         manifest["id"] = ("langsmith", "playground", "PromptPlayground")
         return client.push_prompt(identifier, object=manifest)
+
+    def dumps(self, push: bool = False) -> str:
+        if push:
+            identifier = self.push_prompt(include_model_info=False)
+        else:
+            identifier = self.identifier
+        d = {
+            "identifier": identifier,
+            "prompt_str": (
+                self.prompt_str if self.prompt_str else self.get_prompt_str_in_context()
+            ),
+            "model_config": self.model_config,
+            "which": self.which,
+            "manifest": self._get_seq(client=None),
+        }
+        return dumps(d)
 
 
 @dataclass(kw_only=True)

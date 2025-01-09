@@ -258,7 +258,15 @@ class PhaseEvoAlgorithm(BaseAlgorithm[EvolutionaryConfig]):
                     avg_fitness = sum(fitness_scores) / len(fitness_scores)
                     min_fitness = min(fitness_scores)
                     max_fitness = max(fitness_scores)
-                    trainer.log_metric("score", value=max_fitness, x=i, x_label="epoch")
+                    best_prompt = population[0]
+                    trainer.log_metric(
+                        "score",
+                        value=max_fitness,
+                        x=i,
+                        x_label="epoch",
+                        split="dev",
+                        prompt=best_prompt.prompt,
+                    )
                     tokens_used = pm_utils.get_token_usage()
                     if tokens_used is not None:
                         token_usage.append(tokens_used)
@@ -267,6 +275,8 @@ class PhaseEvoAlgorithm(BaseAlgorithm[EvolutionaryConfig]):
                             value=max_fitness,
                             x=tokens_used,
                             x_label="total tokens",
+                            split="dev",
+                            prompt=best_prompt.prompt,
                         )
 
                     # Update fitness history and phase points

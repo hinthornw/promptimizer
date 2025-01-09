@@ -13,7 +13,7 @@ class AlgorithmConfig:
 
     train_size: Optional[int] = None
     batch_size: int = 40
-    epochs: int = 1
+    epochs: int = 5
     debug: bool = False
     max_score: float = 1.0
 

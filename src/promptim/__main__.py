@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import copy
+import functools
 import importlib.util
 import json
 import os
@@ -35,7 +37,7 @@ def get_tasks(task_name: str):
     return tasks.get(task_name)
 
 
-def load_task(name_or_path: str):
+def _load_task(name_or_path: str):
     from promptim.types import Task
 
     task = get_tasks(name_or_path)
@@ -86,16 +88,9 @@ def load_task(name_or_path: str):
         raise ValueError(f"Could not load task from {name_or_path}: {e}")
 
 
-async def run(
-    task_name: str,
-    batch_size: int,
-    train_size: int,
-    epochs: int,
-    annotation_queue: Optional[str] = None,
-    debug: bool = False,
-    commit: bool = True,
-):
-    task, config, experiment_parent = load_task(task_name)
+@functools.lru_cache
+def load_task(name_or_path: str):
+    task, config, experiment_parent = _load_task(name_or_path)
     if (
         "dataset" in config
         and isinstance(config["dataset"], dict)
@@ -107,7 +102,22 @@ async def run(
         )
         config["dataset"] = ds.name
         task.dataset = ds.name
+    return task, config, experiment_parent
 
+
+async def run(
+    task_name: str,
+    batch_size: int,
+    train_size: int,
+    epochs: int,
+    annotation_queue: Optional[str] = None,
+    debug: bool = False,
+    commit: bool = True,
+    patch: dict | None = None,
+):
+    task, config, experiment_parent = load_task(task_name)
+    if patch:
+        config = deep_merge(config, patch)
     experiment_dir = os.path.join(
         experiment_parent,
         f"exp-{datetime.now(timezone.utc).strftime('%Y-%m-%d-%H-%M-%S')}",
@@ -153,7 +163,7 @@ async def run(
             client=optimizer.client,
         )
 
-    return prompt, score
+    return experiment_dir, config, prompt, score
 
 
 def load_environment():
@@ -242,6 +252,13 @@ def cli():
     is_flag=True,
     help="Prevent committing the optimized prompt to the LangChain Hub. Use this for local experimentation.",
 )
+@click.option(
+    "--sweep",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False),
+    default=None,
+    help="Path to a JSONL file. Each line is a JSON patch for the base config. "
+    "If provided, `train` will loop over each patch, run training, and report results.",
+)
 def train(
     task: str,
     batch_size: int,
@@ -250,25 +267,56 @@ def train(
     debug: bool,
     annotation_queue: Optional[str],
     no_commit: bool,
+    sweep: Optional[str],
 ):
-    """Train and optimize prompts for different tasks."""
-    results = asyncio.run(
-        run(
-            task,
-            batch_size,
-            train_size,
-            epochs,
-            annotation_queue,
-            debug,
-            commit=not no_commit,
-        )
-    )
-    prompt_config, score = results
-    print("Final\n\n")
-    print(prompt_config.get_prompt_str())
-    print("\n\n")
-    print(f"Identifier: {prompt_config.identifier}")
-    print(f"Score: {score}")
+    """Train and optimize prompts for a task.
+    If --sweep is given, run multiple configurations from a JSONL file.
+    """
+    patches = [None]
+    if sweep:
+        with open(sweep, "r", encoding="utf-8") as f:
+            patches = [
+                json.loads(line)
+                for line in f.readlines()
+                if line.strip()
+                and not line.startswith("#")
+                and not line.startswith("//")
+            ]
+
+    def print_results(results: list):
+        print("Best scores:")
+        for _, patch, _, _, score in results:
+            print(f"- Score: {score:.4f} | Patch:\n{json.dumps(patch)}")
+        print("*" * 80)
+
+    async def run_patches(patches: list):
+        results = []
+        for patch in patches:
+            folder, prompt_config, prompt, score = await run(
+                task,
+                batch_size=batch_size,
+                train_size=train_size,
+                epochs=epochs,
+                annotation_queue=annotation_queue,
+                debug=debug,
+                commit=not no_commit,
+                patch=patch,
+            )
+            results.append((folder, patch, prompt_config, prompt, score))
+            if len(results) > 1 and len(results) < len(patches):
+                results = sorted(results, key=lambda x: x[-1], reverse=True)
+                print_results(results)
+
+        return results
+
+    # No sweep: just do the existing single-run logic.
+    results = asyncio.run(run_patches(patches))
+    results = sorted(results, key=lambda x: x[-1], reverse=True)
+    print("Results:")
+    for folder, _, _, prompt, score in results:
+        print(f"- Score: {score:.4f} | {folder}| Prompt:\n{prompt.get_prompt_str()}")
+    if len(results) > 1:
+        print(f"\nBest prompt:\n{results[0][-2].get_prompt_str()}\n\n{results[0][0]}")
 
 
 @cli.group()
@@ -899,6 +947,23 @@ evaluators = [multiple_lines, no_hashtags, under_180_chars]
 
     with open(os.path.join(path, "task.py"), "w") as f:
         f.write(task_template.strip())
+
+
+def deep_merge(base: dict, override: dict) -> dict:
+    """
+    Recursively merge `override` into `base`.
+    Values from override have precedence.
+    """
+    merged = copy.deepcopy(base)
+    for k, v in override.items():
+        if v == "DROP":
+            del merged[k]
+            continue
+        if k in merged and isinstance(merged[k], dict) and isinstance(v, dict):
+            merged[k] = deep_merge(merged[k], v)
+        else:
+            merged[k] = v
+    return merged
 
 
 if __name__ == "__main__":

@@ -133,9 +133,19 @@ class LamarckianMutation(Mutation):
         batches = []
         for _ in range(N):
             batches.append(random.sample(contain_outputs, self.batch_size))
-        return await asyncio.gather(
-            *[self.mutate_single(population[0].prompt, batch) for batch in batches]
-        )
+        return [
+            p
+            for p in (
+                await asyncio.gather(
+                    *[
+                        self.mutate_single(population[0].prompt, batch)
+                        for batch in batches
+                    ],
+                    return_exceptions=True,
+                )
+            )
+            if isinstance(p, pm_types.PromptWrapper)
+        ]
 
     def _format_examples(self, examples: list[pm_types.Example]) -> str:
         return "\n".join(
@@ -198,7 +208,13 @@ class GradientDescentMutation(Mutation):
         4. Format advisor responses into a string
         5. Run metaprompt over formatted advice
         """
-        return await asyncio.gather(*(self.mutate_single(v) for v in population))
+        return [
+            p
+            for p in await asyncio.gather(
+                *(self.mutate_single(v) for v in population), return_exceptions=True
+            )
+            if isinstance(p, pm_types.PromptWrapper)
+        ]
 
     @ls.traceable
     async def mutate_single(self, variant: Variant) -> pm_types.PromptWrapper:
@@ -241,11 +257,12 @@ class GradientDescentMutation(Mutation):
             name="Apply Gradient",
             inputs={"existing_prompt": existing_prompt, "feedback": advice_msg.content},
         ):
-            prompt_output = await create_extractor(
+            chain = create_extractor(
                 self.model,
                 tools=[pm_types.prompt_schema(variant.prompt)],
                 tool_choice="OptimizedPromptOutput",
-            ).ainvoke(
+            )
+            prompt_output = await chain.ainvoke(
                 GRADIENT_DESCENT_APPLICATION_PROMPT.format(
                     existing_prompt=existing_prompt,
                     feedback=advice_msg.content,
@@ -426,12 +443,16 @@ class SemanticMutation(Mutation):
             to_process = population
         techniques = self.techniques.copy()
         random.shuffle(techniques)
-        return await asyncio.gather(
+        results = await asyncio.gather(
             *(
                 self.mutate_single(v, techniques[i % len(techniques)])
                 for i, v in enumerate(to_process)
-            )
+            ),
+            return_exceptions=True,
         )
+        return [
+            result for result in results if isinstance(result, pm_types.PromptWrapper)
+        ]
 
     @ls.traceable
     async def mutate_single(

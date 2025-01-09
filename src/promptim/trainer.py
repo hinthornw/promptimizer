@@ -15,7 +15,7 @@ from uuid import UUID
 from dataclasses import asdict, is_dataclass
 import datetime
 import functools
-from concurrent.futures import ThreadPoolExecutor
+from langsmith.utils import ContextThreadPoolExecutor
 import os
 
 import langsmith as ls
@@ -64,7 +64,7 @@ class PromptTrainer:
         optimizer: pm_optimizers.BaseOptimizer,
         algorithm: Optional["BaseAlgorithm"] = None,
         client: Optional[ls.Client] = None,
-        seed: int = 42,
+        seed: int = 43,
         experiment_dir: str = "~",
     ):
         """Initialize the trainer with a specific optimization algorithm.
@@ -83,7 +83,7 @@ class PromptTrainer:
         self._aqueue: dict[asyncio.Future, Callable[[], Any]] = {}
         self._task = self._loop.create_task(_run(self._aqueue, weakref.ref(self)))
         self._experiment_dir = experiment_dir
-        self._threadpool = ThreadPoolExecutor(max_workers=1)
+        self._threadpool = ContextThreadPoolExecutor(max_workers=1)
 
     async def wait_for_all(self) -> None:
         """Wait for all queued tasks to complete."""
@@ -126,6 +126,7 @@ class PromptTrainer:
             "algorithm": self.algorithm.config,
         }
 
+    @ls.traceable(name="Train Prompt")
     async def train(
         self,
         task: pm_types.Task,
@@ -220,7 +221,7 @@ class PromptTrainer:
         initial_prompt: Optional[Union[str, dict, pm_types.PromptWrapper]] = None,
         train_size: Optional[int] = None,
         batch_size: int = 40,
-        epochs: int = 1,
+        epochs: int = 5,
         debug: bool = False,
         system_config: Optional[dict] = None,
         annotation_queue: Optional[str] = None,
@@ -433,6 +434,35 @@ class PromptTrainer:
                 metric, f"{initial_scores[metric]:.4f}", f"{final_scores[metric]:.4f}"
             )
         richprint(Panel(table, title="Final Report", border_style="bold"))
+
+        initial_average = sum(initial_scores.values()) / len(initial_scores)
+        final_average = sum(final_scores.values()) / len(final_scores)
+        self.log_metric(
+            "score",
+            value=initial_average,
+            x=0,
+            x_label="final",
+            split="test",
+            prompt=initial_prompt,
+        )
+        self.log_metric(
+            "score",
+            value=final_average,
+            x=1,
+            x_label="final",
+            split="test",
+            prompt=best_prompt,
+        )
+        tokens_used = pm_utils.get_token_usage()
+        if tokens_used is not None:
+            self.log_metric(
+                "score",
+                value=final_average,
+                x=tokens_used,
+                x_label="total tokens",
+                split="dev",
+                prompt=best_prompt,
+            )
         return (
             initial_scores,
             final_scores,
@@ -593,19 +623,35 @@ class PromptTrainer:
         }
 
     def log_metric(
-        self, metric_name: str, /, value: float, x: int | float, x_label: str = "epoch"
+        self,
+        metric_name: str,
+        /,
+        value: float,
+        x: int | float,
+        x_label: str = "epoch",
+        split: str = "dev",
+        prompt: pm_types.PromptWrapper | None = None,
     ):
-        self._threadpool.submit(self._log_metric, metric_name, value, x, x_label)
+        self._threadpool.submit(
+            self._log_metric, metric_name, value, x, x_label, split, prompt
+        )
 
     def _log_metric(
-        self, metric_name: str, value: float, x: int | float, x_label: str = "epoch"
+        self,
+        metric_name: str,
+        value: float,
+        x: int | float,
+        x_label: str = "epoch",
+        split: str = "dev",
+        prompt: pm_types.PromptWrapper | None = None,
     ):
         fname = os.path.join(self._experiment_dir, "metrics.csv")
         nexist = not os.path.exists(fname)
         with open(fname, "a") as f:
             if nexist:
-                f.write("x,y,x_label,metric\n")
-            f.write(f"{x},{value},{x_label},{metric_name}\n")
+                f.write("x,y,x_label,metric,split,prompt\n")
+            ps = prompt.dumps(push=True) if prompt else ""
+            f.write(f"{x},{value},{x_label},{metric_name},{split},{ps}\n")
 
     async def _fetch_baseline_metrics(self, experiment_id: UUID) -> dict:
         """Fetches metrics for a baseline experiment."""

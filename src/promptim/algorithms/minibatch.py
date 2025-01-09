@@ -8,6 +8,7 @@ from promptim.trainer import PromptTrainer
 
 from promptim.algorithms.base import BaseAlgorithm, AlgorithmConfig
 from promptim import _utils as pm_utils
+import langsmith as ls
 
 
 class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
@@ -16,6 +17,7 @@ class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
     This preserves the original optimize_prompt behavior.
     """
 
+    @ls.traceable(name="MinibatchAlgorithm.run")
     async def run(
         self,
         trainer: PromptTrainer,
@@ -155,16 +157,22 @@ class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
                         description=f"[yellow]Epoch {epoch+1} (Avg training score: {avg_score:.4f})",
                     )
                     # Get improved population
-                    improved = await trainer.optimizer.improve_prompt(
-                        history=history,
-                        results=results,
-                        task=task,
-                    )
-                    history[-1].extend(improved)
+                    try:
+                        improved = await trainer.optimizer.improve_prompt(
+                            history=history,
+                            results=results,
+                            task=task,
+                        )
+                        history[-1].extend(improved)
 
-                    if commit_prompts:
-                        for prompt in improved:
-                            prompt.push_prompt(client=trainer.client)
+                        if commit_prompts:
+                            for prompt in improved:
+                                prompt.push_prompt(client=trainer.client)
+                    except Exception as e:
+                        progress.console.print(
+                            f"Failed to improve prompt: {e}", style="red"
+                        )
+                        break
 
                 # Evaluate on dev set
                 progress.update(main_task, description="[cyan]Evaluating on dev set...")
@@ -198,7 +206,14 @@ class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
                         f"Score {dev_score:.4f} did not surpass best score {best_score:.4f}"
                     )
 
-                trainer.log_metric("score", value=best_score, x=epoch, x_label="epoch")
+                trainer.log_metric(
+                    "score",
+                    value=best_score,
+                    x=epoch,
+                    x_label="epoch",
+                    split="dev",
+                    prompt=best_prompt,
+                )
                 tokens_used = pm_utils.get_token_usage()
                 if tokens_used is not None:
                     trainer.log_metric(
@@ -206,6 +221,8 @@ class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
                         value=best_score,
                         x=tokens_used,
                         x_label="total tokens",
+                        split="dev",
+                        prompt=best_prompt,
                     )
                 history.append([best_prompt])
 

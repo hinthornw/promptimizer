@@ -6,6 +6,7 @@ from promptim import _utils as pm_utils
 from promptim.optimizers import base as optimizers
 from typing_extensions import Literal
 from trustcall import create_extractor
+import langsmith as ls
 
 DEFAULT_METAPROMPT = """You are an expert prompt engineer tasked with improving prompts for AI tasks.
 You will use all means necessary to optimize the scores for the provided prompt so that the resulting model can
@@ -119,6 +120,7 @@ class MetaPromptOptimizer(optimizers.BaseOptimizer):
             formatted.append("")
         return "\n".join(formatted)
 
+    @ls.traceable
     async def improve_prompt(
         self,
         history: Sequence[Sequence[pm_types.PromptWrapper]],

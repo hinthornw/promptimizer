@@ -155,7 +155,7 @@ The prompt predicted: {example['run'].outputs}
             random.shuffle(failing_examples)
             failing_examples = failing_examples[: self.max_batch_size]
         # 3. Generate targeted recommendations for each failing example
-        advisor = self.model.with_structured_output(Advise)
+        advisor = create_extractor(self.model, tools=[Advise])
         advisor_inputs = [
             [
                 (
@@ -171,7 +171,8 @@ The prompt predicted: {example['run'].outputs}
         with ls.trace(
             name="Analyze examples", inputs={"num_examples": len(failing_examples)}
         ):
-            recommendations: list[Advise] = await advisor.abatch(advisor_inputs)
+            results_ = await advisor.abatch(advisor_inputs)
+            recommendations = cast(list[Advise], [r["responses"][0] for r in results_])
 
         # 4. Format recommendations into a consolidated string
         formatted_recommendations = []

@@ -112,19 +112,17 @@ class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
                     epoch=epoch + 1,
                 )
                 for bix, batch in enumerate(batches):
-                    if (
-                        bix == 0
-                        and epoch == 0
-                        and baseline_experiment_results
-                        and len(baseline_experiment_results) == len(train_examples)
-                    ):
+                    results = None
+                    if bix == 0 and epoch == 0 and baseline_experiment_results:
                         bindices = {e.id for e in batch}
                         results = [
                             r
                             for r in baseline_experiment_results
                             if r["example"].id in bindices
                         ]
-                    else:
+                        if len(results) != len(batch):
+                            results = None
+                    if results is None:
                         results = await trainer._evaluate_prompt(
                             history[-1][-1],
                             task,
@@ -214,6 +212,7 @@ class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
                     split="dev",
                     prompt=best_prompt,
                 )
+
                 tokens_used = pm_utils.get_token_usage()
                 if tokens_used is not None:
                     trainer.log_metric(

@@ -17,6 +17,7 @@ import datetime
 import functools
 from langsmith.utils import ContextThreadPoolExecutor
 import os
+import csv
 
 import langsmith as ls
 from langchain.chat_models import init_chat_model
@@ -441,14 +442,14 @@ class PromptTrainer:
             "score",
             value=initial_average,
             x=0,
-            x_label="final",
+            x_label="base",
             split="test",
             prompt=initial_prompt,
         )
         self.log_metric(
             "score",
             value=final_average,
-            x=1,
+            x=0,
             x_label="final",
             split="test",
             prompt=best_prompt,
@@ -647,11 +648,12 @@ class PromptTrainer:
     ):
         fname = os.path.join(self._experiment_dir, "metrics.csv")
         nexist = not os.path.exists(fname)
-        with open(fname, "a") as f:
+        with open(fname, "a", newline="") as f:
+            writer = csv.writer(f)
             if nexist:
-                f.write("x,y,x_label,metric,split,prompt\n")
+                writer.writerow(["x", "y", "x_label", "metric", "split", "prompt"])
             ps = prompt.dumps(push=True) if prompt else ""
-            f.write(f"{x},{value},{x_label},{metric_name},{split},{ps}\n")
+            writer.writerow([x, value, x_label, metric_name, split, ps])
 
     async def _fetch_baseline_metrics(self, experiment_id: UUID) -> dict:
         """Fetches metrics for a baseline experiment."""

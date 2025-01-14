@@ -1,23 +1,27 @@
-import random
-import time
-from collections import defaultdict
-from typing import (
-    Literal,
-    Optional,
-    Callable,
-    Coroutine,
-    TypeVar,
-    Union,
-    Any,
-    TYPE_CHECKING,
-)
-from uuid import UUID
-from dataclasses import asdict, is_dataclass
+import asyncio
+import csv
 import datetime
 import functools
-from langsmith.utils import ContextThreadPoolExecutor
+import math
 import os
-import csv
+import random
+import statistics
+import time
+import weakref
+from collections import defaultdict
+from dataclasses import asdict, is_dataclass
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    Coroutine,
+    Literal,
+    Optional,
+    TypeVar,
+    Union,
+    overload,
+)
+from uuid import UUID
 
 import langsmith as ls
 from langchain.chat_models import init_chat_model
@@ -25,17 +29,16 @@ from langchain_core.language_models import BaseChatModel
 from langsmith.evaluation import _arunner, _runner
 from langsmith.evaluation._arunner import ExperimentResultRow
 from langsmith.schemas import Example, TracerSession
-from promptim import types as pm_types
+from langsmith.utils import ContextThreadPoolExecutor
 from promptim import _utils as pm_utils
-from promptim import optimizers as pm_optimizers
 from promptim import config as pm_config
+from promptim import optimizers as pm_optimizers
+from promptim import types as pm_types
 from rich import print as richprint
 from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress
 from rich.table import Table
-import asyncio
-import weakref
 
 if TYPE_CHECKING:
     from promptim.algorithms import BaseAlgorithm
@@ -186,7 +189,7 @@ class PromptTrainer:
             system_config=system_config,
         )
         # TODO: fix potential baseline <> population mismatch
-        best_prompt, best_score = await self.algorithm.run(
+        best_prompt, _ = await self.algorithm.run(
             trainer=self,
             task=task,
             initial_population=initial_population,
@@ -199,7 +202,7 @@ class PromptTrainer:
             baseline_scores=baseline_scores,
             baseline_experiment_results=baseline_experiment_results,
         )
-        await self._get_test_scores(
+        _, final_test_scores = await self._get_test_scores(
             task,
             test_examples,
             initial_population[0],
@@ -214,7 +217,8 @@ class PromptTrainer:
             title="Final Prompt Updates",
         )
         await self.wait_for_all()
-        return best_prompt, best_score
+        test_score = statistics.mean(final_test_scores.values())
+        return best_prompt, test_score
 
     async def optimize_prompt(
         self,
@@ -230,7 +234,7 @@ class PromptTrainer:
         experiment_name: Optional[str] = None,
     ) -> tuple[pm_types.PromptWrapper, float]:
         """Legacy method that uses MinibatchAlgorithm for backward compatibility."""
-        from .algorithms import MinibatchAlgorithm, AlgorithmConfig
+        from .algorithms import AlgorithmConfig, MinibatchAlgorithm
 
         algo_config = AlgorithmConfig(
             train_size=train_size,
@@ -389,6 +393,7 @@ class PromptTrainer:
         experiment_name: str,
         debug: bool,
         system_config: Optional[dict] = None,
+        num_repetitions: int = 5,
     ):
         test_baseline_session_fut = self._enqueue_experiment(
             experiment_name=experiment_name,
@@ -410,6 +415,7 @@ class PromptTrainer:
             debug=debug,
             system_config=system_config,
             experiment=await test_baseline_session_fut,
+            num_repetitions=num_repetitions,
         )
         final_test_results = await self._evaluate_prompt(
             best_prompt,
@@ -418,32 +424,51 @@ class PromptTrainer:
             debug=debug,
             experiment=await test_final_session_fut,
             system_config=system_config,
+            num_repetitions=num_repetitions,
         )
         # Print final report
-        initial_scores = await self.calculate_scores(initial_test_results)
-        final_scores = await self.calculate_scores(final_test_results)
+        initial_scores, initial_stdev, initial_ci = await self.calculate_scores(
+            initial_test_results, ci=True
+        )
+        final_scores, final_stdev, final_ci = await self.calculate_scores(
+            final_test_results, ci=True
+        )
 
         table = Table(
-            title="Optimization Results", show_header=True, header_style="bold magenta"
+            title="Optimization Results Test",
+            show_header=True,
+            header_style="bold magenta",
         )
         table.add_column("Metric", style="cyan", no_wrap=True)
         table.add_column("Initial Score", justify="right", style="green")
         table.add_column("Final Score", justify="right", style="green")
 
         for metric in initial_scores.keys():
+            initial_std = initial_stdev.get(metric, (None, None))
+            final_std = final_stdev.get(metric, (None, None))
             table.add_row(
-                metric, f"{initial_scores[metric]:.4f}", f"{final_scores[metric]:.4f}"
+                metric,
+                f"{initial_scores[metric]:.4f} ({initial_std[0]:.4f}-{initial_std[1]:.4f})",
+                f"{final_scores[metric]:.4f} ({final_std[0]:.4f}-{final_std[1]:.4f})",
             )
-        richprint(Panel(table, title="Final Report", border_style="bold"))
-
         initial_average = sum(initial_scores.values()) / len(initial_scores)
         final_average = sum(final_scores.values()) / len(final_scores)
+        initial_lower, initial_upper = initial_ci
+        final_lower, final_upper = final_ci
+        table.add_row(
+            "Average",
+            f"{initial_average:.4f} ({initial_lower:.4f}-{initial_upper:.4f})",
+            f"{final_average:.4f} ({final_lower:.4f}-{final_upper:.4f})",
+        )
+        richprint(Panel(table, title="Final Report", border_style="bold"))
+
         self.log_metric(
             "score",
             value=initial_average,
             x=0,
             x_label="base",
             split="test",
+            bounds=(initial_ci[0], initial_ci[1]),
             prompt=initial_prompt,
         )
         self.log_metric(
@@ -452,6 +477,7 @@ class PromptTrainer:
             x=0,
             x_label="final",
             split="test",
+            bounds=(final_ci[0], final_ci[1]),
             prompt=best_prompt,
         )
         tokens_used = pm_utils.get_token_usage()
@@ -462,6 +488,7 @@ class PromptTrainer:
                 x=tokens_used,
                 x_label="total tokens",
                 split="dev",
+                bounds=(final_ci[0], final_ci[1]),
                 prompt=best_prompt,
             )
         return (
@@ -575,6 +602,7 @@ class PromptTrainer:
         debug: bool = False,
         experiment: str | TracerSession | None = None,
         system_config: dict | None = None,
+        num_repetitions: int = 1,
     ) -> list[ExperimentResultRow]:
         """Evaluates a prompt against a task's dataset and evaluators."""
         prompt = prompt_config.load(self.client)
@@ -595,6 +623,7 @@ class PromptTrainer:
             max_concurrency=0 if debug else None,
             experiment=experiment,
             experiment_prefix="Optimizer" if not experiment else None,
+            num_repetitions=num_repetitions,
             metadata=metadata,
         )
         now = datetime.datetime.now(datetime.timezone.utc)
@@ -607,21 +636,82 @@ class PromptTrainer:
         )
         return [r async for r in results]
 
+    @overload
     async def calculate_scores(
-        self, results: list[ExperimentResultRow]
+        self, results: list[ExperimentResultRow], ci: Literal[True] = True
+    ) -> tuple[dict[str, float], dict[str, tuple[float, float]], tuple[float, float]]:
+        """Calculates aggregate scores from evaluation results, grouped by key."""
+
+    @overload
+    async def calculate_scores(
+        self, results: list[ExperimentResultRow], ci: Literal[False] = False
     ) -> dict[str, float]:
         """Calculates aggregate scores from evaluation results, grouped by key."""
 
-        scores = defaultdict(list)
+    async def calculate_scores(
+        self,
+        results: list[ExperimentResultRow],
+        ci: bool = False,
+    ) -> Union[
+        dict[str, float],
+        tuple[dict[str, float], dict[str, tuple[float, float]], tuple[float, float]],
+    ]:
+        """
+        Calculate and return:
+          - If ci=False: {key: mean_score}
+          - If ci=True : ( {key: mean_score},
+                           {key: (lower, upper)},
+                           (global_lower, global_upper) )
+        Where "global" means combining all data across all keys into a single distribution or proportion.
+        """
+
+        scores_dict = defaultdict(list)
+        all_scores = []
+
         for result in results:
             for res in result["evaluation_results"]["results"]:
                 if res.score is not None:
-                    scores[res.key].append(res.score)
+                    scores_dict[res.key].append(res.score)
+                    all_scores.append(res.score)
 
-        return {
-            key: sum(values) / len(values) if values else 0.0
-            for key, values in scores.items()
-        }
+        means = {}
+        cintervals = {}
+
+        for key, vals in scores_dict.items():
+            if len(vals) == 0:
+                means[key] = 0.0
+                if ci:
+                    cintervals[key] = (0.0, 0.0)
+                continue
+
+            is_binomial = all(v in (0, 1) for v in vals)
+            mean_ = statistics.mean(vals)
+            means[key] = mean_
+
+            if ci:
+                if is_binomial:
+                    x = sum(vals)
+                    n = len(vals)
+                    lower, upper = _wilson_score_interval(x, n)
+                else:
+                    lower, upper = _continuous_confidence_interval(vals)
+                cintervals[key] = (lower, upper)
+
+        if not ci:
+            return means
+
+        if len(all_scores) == 0:
+            global_ci = (0.0, 0.0)
+        else:
+            all_binomial = all(v in (0, 1) for v in all_scores)
+            if all_binomial:
+                x = sum(all_scores)
+                n = len(all_scores)
+                global_ci = _wilson_score_interval(x, n)
+            else:
+                global_ci = _continuous_confidence_interval(all_scores)
+
+        return (means, cintervals, global_ci)
 
     def log_metric(
         self,
@@ -631,10 +721,11 @@ class PromptTrainer:
         x: int | float,
         x_label: str = "epoch",
         split: str = "dev",
+        bounds: tuple[float, float] | None = None,
         prompt: pm_types.PromptWrapper | None = None,
     ):
         self._threadpool.submit(
-            self._log_metric, metric_name, value, x, x_label, split, prompt
+            self._log_metric, metric_name, value, x, x_label, split, bounds, prompt
         )
 
     def _log_metric(
@@ -644,6 +735,7 @@ class PromptTrainer:
         x: int | float,
         x_label: str = "epoch",
         split: str = "dev",
+        bounds: tuple[float, float] | None = None,
         prompt: pm_types.PromptWrapper | None = None,
     ):
         fname = os.path.join(self._experiment_dir, "metrics.csv")
@@ -651,9 +743,12 @@ class PromptTrainer:
         with open(fname, "a", newline="") as f:
             writer = csv.writer(f)
             if nexist:
-                writer.writerow(["x", "y", "x_label", "metric", "split", "prompt"])
+                writer.writerow(
+                    ["x", "y", "x_label", "metric", "split", "lower", "upper", "prompt"]
+                )
             ps = prompt.dumps(push=True) if prompt else ""
-            writer.writerow([x, value, x_label, metric_name, split, ps])
+            lower, upper = bounds or ("", "")
+            writer.writerow([x, value, x_label, metric_name, split, lower, upper, ps])
 
     async def _fetch_baseline_metrics(self, experiment_id: UUID) -> dict:
         """Fetches metrics for a baseline experiment."""
@@ -893,3 +988,91 @@ async def _run(
                     fut.set_exception(e)
                 if fut in aqueue:
                     del aqueue[fut]
+
+
+def _z_value_for_conf() -> float:
+    # For alpha 0.05 lol
+    return 1.96
+
+
+T_CRITICAL_VALUES = {
+    2: 12.706,
+    3: 4.303,
+    4: 3.182,
+    5: 2.776,
+    6: 2.571,
+    7: 2.447,
+    8: 2.365,
+    9: 2.306,
+    10: 2.262,
+    11: 2.228,
+    12: 2.201,
+    13: 2.179,
+    14: 2.160,
+    15: 2.145,
+    16: 2.131,
+    17: 2.120,
+    18: 2.110,
+    19: 2.101,
+    20: 2.093,
+    21: 2.086,
+    22: 2.080,
+    23: 2.074,
+    24: 2.069,
+    25: 2.064,
+    26: 2.060,
+    27: 2.056,
+    28: 2.052,
+    29: 2.048,
+    30: 2.045,
+}
+
+
+def _t_value_for_conf(n: int) -> float:
+    """
+    Returns the t critical value for alpha (default=0.05 => ~95% CI)
+    with df = n - 1. Uses precomputed lookup for n <= 30.
+    """
+    if n <= 1:
+        return float("inf")
+    if n <= 30:
+        return T_CRITICAL_VALUES.get(n, float("inf"))
+    # Fallback approximation for n > 30 (as t approaches z value ~1.96 for 95% CI)
+    return 1.96
+
+
+def _continuous_confidence_interval(values: list[float]) -> tuple[float, float]:
+    """
+    Uses a t-based approach if n <= 30, else z-based for "large" n.
+    Returns (lower, upper).
+    """
+
+    n = len(values)
+    if n == 0:
+        return (0.0, 0.0)
+    mean_ = statistics.mean(values)
+    if n == 1:
+        return (mean_, mean_)  # Degenerate case
+
+    stdev_ = statistics.stdev(values)
+    t_crit = _t_value_for_conf(n)
+    margin = t_crit * (stdev_ / math.sqrt(n))
+    return (mean_ - margin, mean_ + margin)
+
+
+def _wilson_score_interval(x: int, n: int) -> tuple[float, float]:
+    """
+    Wilson interval for binomial data, default 95% confidence (alpha=0.05).
+    """
+    import math
+
+    if n == 0:
+        return (0.0, 0.0)
+    z = 1.96
+    p_hat = x / n
+    denom = 1 + z**2 / n
+    center = p_hat + z**2 / (2 * n)
+    main = z * math.sqrt((p_hat * (1 - p_hat) + z**2 / (4 * n)) / n)
+    lower = (center - main) / denom
+    upper = (center + main) / denom
+    return (lower, upper)

@@ -1,0 +1,19 @@
+{
+  "name": "cs_tooluse",
+  "dataset": "CS Simulations",
+  "description": "Triage emails",
+  "evaluators": "./evaluators.py:check_output",
+  "evaluator_descriptions": {
+    "accuracy": "Evaluates if the predicted tool calls match the expected behavior"
+  },
+  "optimizer": {
+    "model": {
+      "model": "claude-3-5-sonnet-20241022"
+    }
+  },
+  "initial_prompt": {
+    "identifier": "langchain-ai/support-tool-use-demo:d6981321",
+    "upload_to": "langchain-ai/support-tool-use-demo"
+  },
+  "$schema": "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+}

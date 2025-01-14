@@ -10,6 +10,7 @@ from langchain_core.language_models import BaseChatModel
 from langchain_core.load import dumps
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.prompts.structured import StructuredPrompt
+from langchain_core.prompts import MessagesPlaceholder
 from langchain_core.runnables import RunnableBinding, RunnableSequence
 from langsmith.schemas import Example, Run
 from langsmith.utils import LangSmithConflictError
@@ -141,7 +142,11 @@ class PromptWrapper(PromptConfig):
         tmpl = self.load(client)
         msg = tmpl.messages[self.which]
         try:
-            return msg.prompt.template  # type: ignore
+            return (
+                "{{messages}}"
+                if isinstance(msg, MessagesPlaceholder)
+                else msg.prompt.template
+            )
         except Exception as e:
             raise NotImplementedError(
                 f"Unsupported message template format. {msg}"
@@ -159,15 +164,17 @@ class PromptWrapper(PromptConfig):
                 "Human", "User"
             )
             if i == self.which:
+                tmpl = "{{messages}}" if isinstance(msg, MessagesPlaceholder) else msg.prompt.template  # type: ignore
                 formatted.append(
                     f"""<TO_OPTIMIZE kind="{kind}">
-{msg.prompt.template}
+{tmpl}
 </TO_OPTIMIZE>"""
                 )
             else:
+                tmpl = "{{messages}}" if isinstance(msg, MessagesPlaceholder) else msg.prompt.template  # type: ignore
                 formatted.append(
                     f"""<CONTEXT kind="{kind}">
-{msg.prompt.template}
+{tmpl}
 </CONTEXT>
 """
                 )

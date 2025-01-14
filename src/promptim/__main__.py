@@ -232,7 +232,7 @@ def cli():
 @click.option(
     "--epochs",
     type=int,
-    default=2,
+    default=10,
     help="Number of complete passes through the training data. More epochs may improve results but increase runtime.",
 )
 @click.option(

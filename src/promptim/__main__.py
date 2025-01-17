@@ -96,10 +96,17 @@ def load_task(name_or_path: str):
         and isinstance(config["dataset"], dict)
         and "url" in config["dataset"]
     ):
+        dataset_url = config["dataset"]["url"]
+        dataset_name = config["dataset"]["name"]
+    elif task.dataset.startswith("https://"):
+        dataset_url = task.dataset
+        dataset_name = None
+    else:
+        dataset_url = None
+        dataset_name = None
+    if dataset_url:
         ls_client = ls.Client()
-        ds = ls_client.clone_public_dataset(
-            config["dataset"]["url"], dataset_name=config["dataset"]["name"]
-        )
+        ds = ls_client.clone_public_dataset(dataset_url, dataset_name=dataset_name)
         config["dataset"] = ds.name
         task.dataset = ds.name
     return task, config, experiment_parent

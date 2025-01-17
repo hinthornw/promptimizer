@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import AsyncExitStack
 import csv
 import datetime
 import functools
@@ -8,6 +9,7 @@ import random
 import statistics
 import time
 import weakref
+import uuid
 from collections import defaultdict
 from dataclasses import asdict, is_dataclass
 from typing import (
@@ -39,6 +41,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.progress import Progress
 from rich.table import Table
+import logging
 
 if TYPE_CHECKING:
     from promptim.algorithms import BaseAlgorithm
@@ -58,6 +61,7 @@ def _noop(*args, **kwargs):
 
 _runner.print = _noop  # type: ignore
 _arunner.print = _noop  # type: ignore
+logger = logging.getLogger(__name__)
 
 
 class PromptTrainer:
@@ -367,7 +371,7 @@ class PromptTrainer:
                 _create_experiment,
                 client=self.client,
                 dataset_id=train_examples[0].dataset_id,
-                experiment_name=experiment_name + "- baseline",
+                experiment_name=experiment_name + f"- baseline {uuid.uuid4().hex[:6]}",
             )
             baseline_experiment_results = await self._evaluate_prompt(
                 current_prompt,
@@ -594,6 +598,7 @@ class PromptTrainer:
 
         return list(results_dict.values()), user_input
 
+    @ls.traceable(process_outputs=lambda _: {})
     async def _evaluate_prompt(
         self,
         prompt_config: pm_types.PromptWrapper,
@@ -603,37 +608,54 @@ class PromptTrainer:
         experiment: str | TracerSession | None = None,
         system_config: dict | None = None,
         num_repetitions: int = 1,
+        upload_results: bool = True,
     ) -> list[ExperimentResultRow]:
         """Evaluates a prompt against a task's dataset and evaluators."""
         prompt = prompt_config.load(self.client)
         metadata = {
             "prompt": prompt_config.identifier if prompt_config.identifier else "local"
         }
+        rt = ls.get_current_run_tree()
 
         async def predict(inputs: dict):
-            if system_config:
-                return await task.system_safe(prompt, inputs, **system_config)
-            else:
-                return await task.system_safe(prompt, inputs)
+            stack = AsyncExitStack()
+            prt = None
+            if not upload_results:
+                prt = await stack.enter_async_context(
+                    ls.trace("predict", inputs=inputs, parent=rt)
+                )
+            async with stack:
+                if system_config:
+                    result = await task.system_safe(prompt, inputs, **system_config)
+                else:
+                    result = await task.system_safe(prompt, inputs)
+                if prt is not None:
+                    if isinstance(result, dict):
+                        prt.add_outputs(result)
+                    else:
+                        prt.add_outputs({"output": result})
 
-        results = await ls.aevaluate(
-            predict,
-            data=data,
-            evaluators=task.evaluators,
-            max_concurrency=0 if debug else None,
-            experiment=experiment,
-            experiment_prefix="Optimizer" if not experiment else None,
-            num_repetitions=num_repetitions,
-            metadata=metadata,
-        )
+        with ls.tracing_context(parent={"langsmith-trace": ""}):
+            results = await ls.aevaluate(
+                predict,
+                data=data,
+                evaluators=task.evaluators,
+                max_concurrency=0 if debug else None,
+                experiment=experiment,
+                experiment_prefix="Optimizer" if not experiment else None,
+                num_repetitions=num_repetitions,
+                metadata=metadata,
+                upload_results=upload_results,
+            )
         now = datetime.datetime.now(datetime.timezone.utc)
-        # Temporary: permit run ingestion to extend existing experiment
-        await _queue(
-            self,
-            self.client.update_project,
-            project_id=results._manager._experiment.id,
-            end_time=now + datetime.timedelta(days=999),
-        )
+        if results._manager._experiment is not None:
+            await _queue(
+                self,
+                self.client.update_project,
+                project_id=results._manager._experiment.id,
+                end_time=now + datetime.timedelta(days=999),
+            )
+
         return [r async for r in results]
 
     @overload
@@ -648,6 +670,7 @@ class PromptTrainer:
     ) -> dict[str, float]:
         """Calculates aggregate scores from evaluation results, grouped by key."""
 
+    @ls.traceable(process_inputs=lambda _: {})
     async def calculate_scores(
         self,
         results: list[ExperimentResultRow],
@@ -921,13 +944,12 @@ def _create_experiment(
                 reference_dataset_id=dataset_id,
                 metadata={"__creation_source": "promptim", **(metadata or {})},
             )
-        except ls_utils.LangSmithConflictError:
+        except ls_utils.LangSmithConflictError as e:
             # If there's a conflict, increment the index and try again
             next_idx += 1
-            new_name = f"{experiment_name} [{next_idx}]"
-
+            new_name = f"{experiment_name} [{next_idx}-{uuid.uuid4().hex[:4]}]"
     raise ValueError(
-        f"Could not find a unique experiment name in {num_attempts} attempts."
+        f"Could not find a unique experiment name ({experiment_name})in {num_attempts} attempts."
         " Please try again with a different experiment name."
     )
 

@@ -331,10 +331,14 @@ class Task(TaskLike):
 
 class OptimizedPromptOutput(Protocol):
     analysis: str
+    hypothesis: str
     improved_prompt: str
 
 
-def prompt_schema(og_prompt: PromptWrapper) -> type[OptimizedPromptOutput]:
+def prompt_schema(
+    og_prompt: PromptWrapper,
+    schema: type[OptimizedPromptOutput] = OptimizedPromptOutput,
+) -> type[OptimizedPromptOutput]:
     required_variables = og_prompt.required_variables()
     if required_variables:
         variables_str = ", ".join(f"{{{var}}}" for var in required_variables)
@@ -355,6 +359,9 @@ def prompt_schema(og_prompt: PromptWrapper) -> type[OptimizedPromptOutput]:
 
         analysis: str = Field(
             description="First, analyze the current results and plan improvements to reconcile them."
+        )
+        hypothesis: str = Field(
+            description="Second, write your hypothesis on what prompt intervention you are making to fix the prompt's errors."
         )
         improved_prompt: str = Field(
             description="The improved prompt text to replace the text contained within the"

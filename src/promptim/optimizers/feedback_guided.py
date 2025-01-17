@@ -190,6 +190,7 @@ The prompt predicted: {example['run'].outputs}
             tool_choice="OptimizedPromptOutput",
         )
         inputs = {
+            "current_hypo": "",
             "current_prompt": current_prompt.get_prompt_str_in_context(),
             "task_description": task.describe(),
             "annotated_results": all_recommendations,

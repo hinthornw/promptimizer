@@ -89,16 +89,17 @@ class MetaPromptSystem:
         dev_batch = list(
             self.trainer.client.list_examples(example_ids=inputs["dev_batch"])
         )
-        initial_results = [
-            r
-            async for r in (
-                await ls.aevaluate(
-                    predict,
-                    data=train_batch,
-                    evaluators=task.evaluators,
+        with ls.tracing_context(parent={"langsmith-trace": ""}):
+            initial_results = [
+                r
+                async for r in (
+                    await ls.aevaluate(
+                        predict,
+                        data=train_batch,
+                        evaluators=task.evaluators,
+                    )
                 )
-            )
-        ]
+            ]
         task.initial_prompt.get_prompt_str()
 
         # Generate new downstream task prompt
@@ -111,31 +112,33 @@ class MetaPromptSystem:
 
         # Now we actually evaluate based on how well the updated prompt's "improvements"
         # translate to a dev batch
-        initial_dev_results = [
-            r
-            async for r in (
-                await ls.aevaluate(
-                    predict,
-                    data=dev_batch,
-                    evaluators=task.evaluators,
+        with ls.tracing_context(parent={"langsmith-trace": ""}):
+            initial_dev_results = [
+                r
+                async for r in (
+                    await ls.aevaluate(
+                        predict,
+                        data=dev_batch,
+                        evaluators=task.evaluators,
+                    )
                 )
-            )
-        ]
+            ]
         initial_dev_scores = await self.trainer.calculate_scores(initial_dev_results)
 
         async def predict_new(example_inputs: dict):
             return await task.system_safe(extracted._cached, example_inputs)
 
-        new_results = [
-            r
-            async for r in (
-                await ls.aevaluate(
-                    predict_new,
-                    data=dev_batch,
-                    evaluators=task.evaluators,
+        with ls.tracing_context(parent={"langsmith-trace": ""}):
+            new_results = [
+                r
+                async for r in (
+                    await ls.aevaluate(
+                        predict_new,
+                        data=dev_batch,
+                        evaluators=task.evaluators,
+                    )
                 )
-            )
-        ]
+            ]
         new_scores = await self.trainer.calculate_scores(new_results)
         return {
             "original_prompt": task.initial_prompt,

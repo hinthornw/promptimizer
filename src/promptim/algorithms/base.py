@@ -35,10 +35,10 @@ class BaseAlgorithm(Generic[C], ABC):
         self.config = self._resolve_config(config or {})
         self.model = model
 
-    def _resolve_config(self, config: Union[dict, AlgorithmConfig]) -> AlgorithmConfig:
+    def _resolve_config(self, config: Union[dict, AlgorithmConfig]) -> C:
         if isinstance(config, dict):
-            return self.config_cls(**config)
-        return config
+            return self.config_cls(**config)  # type: ignore
+        return config  # type: ignore
 
     @abstractmethod
     async def run(

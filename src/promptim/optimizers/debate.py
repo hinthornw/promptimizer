@@ -291,7 +291,7 @@ Confidence: {defense.confidence}"""
             return unique_vulnerabilities
         except Exception as e:
             print(f"Error during vulnerability analysis: {e}")
-            print(f"Full error details:", e.__class__.__name__, str(e))
+            print("Full error details:", e.__class__.__name__, str(e))
             return []
 
     def _format_examples(self, results: list[ExperimentResultRow]) -> str:
@@ -365,7 +365,7 @@ Score: {avg_score:.4f}
             return unique_defenses
         except Exception as e:
             print(f"Error during defense generation: {e}")
-            print(f"Full error details:", e.__class__.__name__, str(e))
+            print("Full error details:", e.__class__.__name__, str(e))
             return []
 
     async def _conduct_debate(
@@ -406,7 +406,7 @@ Score: {avg_score:.4f}
             return final_debate
         except Exception as e:
             print(f"Error during debate: {e}")
-            print(f"Full error details:", e.__class__.__name__, str(e))
+            print("Full error details:", e.__class__.__name__, str(e))
             return DebateRound(
                 consensus_points=[],
                 disagreements=[],

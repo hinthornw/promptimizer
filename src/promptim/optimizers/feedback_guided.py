@@ -132,6 +132,7 @@ The prompt predicted: {example['run'].outputs}
         history: Sequence[Sequence[pm_types.PromptWrapper]],
         results: list[ExperimentResultRow],
         task: pm_types.Task,
+        **kwargs,
     ) -> list[pm_types.PromptWrapper]:
         """Improve prompt using feedback from failing examples.
 

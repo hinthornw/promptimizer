@@ -160,6 +160,7 @@ class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
                             history=history,
                             results=results,
                             task=task,
+                            trainer=trainer,
                         )
                         history[-1].extend(improved)
 

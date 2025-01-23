@@ -197,6 +197,7 @@ Confidence: {defense.confidence}"""
         results: list[ExperimentResultRow],
         task: pm_types.Task,
         other_attempts: list[pm_types.PromptWrapper],
+        trainer: "Trainer" = None,
     ) -> pm_types.PromptWrapper:
         print("\n=== DebaterOptimizer: Starting Optimization ===")
         print(f"Current prompt:\n{current_prompt.get_prompt_str()}")

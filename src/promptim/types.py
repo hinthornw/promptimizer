@@ -16,6 +16,9 @@ from langsmith.schemas import Example, Run
 from langsmith.utils import LangSmithConflictError
 from pydantic import BaseModel, Field, model_validator
 from promptim._utils import get_var_healer
+import logging
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_PROMPT_MODEL_CONFIG = {"model": "claude-3-5-haiku-20241022"}
 DEFAULT_OPTIMIZER_MODEL_CONFIG = {
@@ -78,7 +81,9 @@ class PromptWrapper(PromptConfig):
     extra: dict | None = None
 
     @classmethod
-    def from_config(cls, config: PromptConfig):
+    def from_config(cls, config: PromptConfig | dict):
+        if isinstance(config, dict):
+            config = PromptConfig(**config)
         return cls(
             identifier=config.identifier,
             prompt_str=config.prompt_str,
@@ -101,9 +106,22 @@ class PromptWrapper(PromptConfig):
                 prompt = client.pull_prompt(self.identifier, include_model=True)
                 if isinstance(prompt, RunnableSequence):
                     prompt, bound_llm = prompt.first, prompt.steps[1]
+                    new_model = None
+
                     if isinstance(bound_llm, RunnableBinding):
                         if tools := bound_llm.kwargs.get("tools"):
                             bound_llm.kwargs["tools"] = _ensure_stricty(tools)
+                        if new_model:
+                            bound_llm = new_model.bind(
+                                **{
+                                    k: v
+                                    for k, v in bound_llm.kwargs.items()
+                                    if k not in ("model", "model_name")
+                                }
+                            )
+                    else:
+                        if new_model:
+                            bound_llm = new_model
                     if isinstance(prompt, StructuredPrompt) and isinstance(
                         bound_llm, RunnableBinding
                     ):
@@ -116,12 +134,13 @@ class PromptWrapper(PromptConfig):
                         postlude = RunnableSequence(
                             rebound_llm.bind(
                                 **{
-                                    **{
-                                        k: v
-                                        for k, v in (bound_llm.kwargs or {}).items()
-                                        if k not in rebound_llm.kwargs
-                                    },
-                                    **(self.model_config or {}),
+                                    k: v
+                                    for k, v in (
+                                        dict((bound_llm.kwargs or {}))
+                                        | (self.model_config or {})
+                                    ).items()
+                                    if k not in rebound_llm.kwargs
+                                    and k not in ("model", "model_name")
                                 }
                             ),
                             parser,

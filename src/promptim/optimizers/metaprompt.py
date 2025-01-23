@@ -128,6 +128,7 @@ class MetaPromptOptimizer(optimizers.BaseOptimizer):
         history: Sequence[Sequence[pm_types.PromptWrapper]],
         results: List[ExperimentResultRow],
         task: pm_types.Task,
+        **kwargs,
     ) -> list[pm_types.PromptWrapper]:
         current_prompt = history[-1][-1]
         other_attempts = list(

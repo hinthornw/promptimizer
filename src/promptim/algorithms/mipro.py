@@ -16,39 +16,33 @@ from typing import (
     Union,
 )
 import uuid
+import json
 
+import langsmith as ls
 
 from promptim.algorithms.base import BaseAlgorithm, AlgorithmConfig
 from promptim.trainer import PromptTrainer
 from promptim import types as pm_types
 from promptim.algorithms.tpe_sampler import TPESampler
-import langsmith as ls
-import json
 
 
 @dataclass
 class MiproAlgorithmConfig(AlgorithmConfig):
+    """
+    Only the relevant parameters are included.
+    No changes except renaming max_bootstrapped_examples -> max_bootstrapped_examples, etc.
+    """
 
     max_bootstrapped_examples: int = 4
-
     max_labeled_examples: int = 4
-
     num_trials: int = 30
-
     minibatch: bool = True
-
     minibatch_size: int = 50
-
     minibatch_full_eval_steps: int = 10
-
     num_instruction_candidates: int = 10
-
     max_errors: int = 10
-
     requires_permission_to_run: bool = False
-
     seed: int = 42
-
     min_minibatch_size: int = 50
 
 
@@ -77,14 +71,19 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
             print(ls.get_current_run_tree().get_url())
         except Exception:
             pass
+
         cfg = self.config
         max_errors = cfg.max_errors
+
+        # Handle initial_population
         if isinstance(initial_population, pm_types.PromptWrapper):
             initial_population = [initial_population]
         baseline_prompt = initial_population[-1]
 
+        # Seed
         self._rng = random.Random(cfg.seed)
 
+        # Evaluate baseline
         if baseline_scores and len(baseline_scores) > 0:
             best_score = sum(baseline_scores.values()) / len(baseline_scores)
         else:
@@ -93,6 +92,7 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
             )
 
         best_prompt = baseline_prompt
+
         example_candidates, max_errors = await self._synth_fewshots(
             trainer=trainer,
             task=task,
@@ -159,13 +159,7 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
         all_candidates: List[List[pm_types.Example]] = []
         perm = train_examples.copy()
         rng.shuffle(perm)
-        breakpoint()
 
-        # If teacher is provided, we call the teacher on some examples to produce "bootstrapped synth_examples"
-        # If teacher is None, we rely on reference-labeled synth_examples from the examples themselves
-        # We combine up to max_boot + max_label per set
-
-        # We'll chunk the training examples to produce different sets:
         chunk_size = max_boot + max_label
         sets_created = 0
         i = 0
@@ -213,15 +207,11 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
         if teacher is None:
             return examples[:max_label]
 
-        # Otherwise we produce up to `max_boot` teacher-based outputs
-        # plus up to `max_label` labeled references if the example has any
         labeled_examples = []
         teacher_examples = []
-        # For labeled references
         if max_label > 0 and len(examples) > 0:
             labeled_examples = examples[:max_label]
 
-        # For teacher-based
         teacher_inps = examples[max_label : max_label + max_boot]
         if teacher_inps:
             teacher_outputs = await self._call_teacher_for_synth_fewshots(
@@ -240,10 +230,7 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
         examples: List[pm_types.Example],
         system_config: Optional[dict] = None,
     ) -> List[pm_types.Example]:
-        """Calls the teacher LLM on each example input, obtains an output,
-        and returns new pm_types.Example objects with input->teacher_output
-        as the "reference."
-        """
+        """Calls teacher LLM on each example, capturing teacher's output as the reference."""
         results = await trainer._evaluate_prompt(
             teacher,
             task,
@@ -275,7 +262,144 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
         cfg: MiproAlgorithmConfig,
         system_config: Optional[dict] = None,
     ) -> List[str]:
-        # First, create a data summary to understand global patterns
+        data_summary = await self._build_data_summary(
+            trainer, task, train_examples, rng, cfg, system_config
+        )
+
+        instructions_prompt = pm_types.PromptWrapper.from_prior(
+            baseline_prompt,
+            (
+                "You are an expert at analyzing training data to propose improved instructions. "
+                "Below is a data summary and sample of training examples, along with a baseline prompt. "
+                "Propose up to 10 new instructions (one per line) that will improve accuracy.\n\n"
+                "<DATA_SUMMARY>\n"
+                f"{data_summary}\n"
+                "</DATA_SUMMARY>\n\n"
+                "<TRAIN_DATA_SNIPPET>\n"
+                f"{_sample_data_for_prompt(train_examples, max_len=5)}\n"
+                "</TRAIN_DATA_SNIPPET>\n\n"
+                "<BASELINE_PROMPT>\n"
+                f"{baseline_prompt.get_prompt_str()}\n"
+                "</BASELINE_PROMPT>\n\n"
+                "Focus on both general patterns from the data summary and specific requirements "
+                "from the examples. Each instruction should be clear and actionable.\n\n"
+                "Now propose instructions:\n"
+            ),
+            extra_info={"proposer": True},
+        )
+
+        propose_results = await trainer._evaluate_prompt(
+            instructions_prompt,
+            task,
+            train_examples,
+            debug=cfg.debug,
+            system_config=system_config,
+            upload_results=False,
+        )
+        if not propose_results:
+            return []
+
+        raw_output = propose_results[0]["run"].outputs
+        lines = [line for line in raw_output if line]
+        instructions = {}
+        for line in lines:
+            instructions[json.dumps(line, sort_keys=True)] = line
+            if len(instructions) >= cfg.num_instruction_candidates:
+                break
+
+        return list(instructions.values())
+
+        # @ls.traceable
+        # async def _propose_instructions(
+        #     self,
+        #     trainer: "PromptTrainer",
+        #     task: pm_types.Task,
+        #     baseline_prompt: pm_types.PromptWrapper,
+        #     train_examples: List[pm_types.Example],
+        #     rng: random.Random,
+        #     cfg: "MiproAlgorithmConfig",
+        #     system_config: Optional[dict] = None,
+        #     max_summary_examples: int = 8,
+        #     max_instructions: int = 10,
+        # ) -> List[str]:
+        #     """
+        #     A robust method to propose new instructions for MIPRO:
+        #     1) Summarize the training data, either with a multi-step chain or a single call.
+        #     2) Form a meta-prompt that includes the data summary + the current baseline prompt.
+        #     3) Directly call the LLM (no dummy example) to get a textual block of instructions.
+        #     4) Parse them into a list. Return the instructions.
+        #     """
+
+        #     # 1) Summarize the training data (can be multi-step or a single call).
+        #     data_summary = await self._build_data_summary(
+        #         trainer,
+        #         task,
+        #         baseline_prompt,
+        #         train_examples,
+        #         max_summary_examples,
+        #         system_config,
+        #     )
+
+        #     # 2) Build a meta-prompt that references the data summary and current prompt.
+        #     #    We ask the LLM for up to `max_instructions` lines.
+        #     meta_prompt_text = f"""\
+        # You are an expert at analyzing training data and improving prompt instructions.
+
+        # ## Data Summary
+        # {data_summary}
+
+        # ## Baseline Prompt
+        # {baseline_prompt.get_prompt_str_in_context()}
+
+        # Propose up to {max_instructions} new instructions (one per line) that will improve accuracy
+        # and fix any weaknesses in the baseline prompt. Each instruction should be clear, actionable,
+        # and mindful of the data summary. Do not repeat the baseline prompt's existing instructions.
+        # """
+
+        #     # 3) Now we do a direct call to the LLM.
+        #     #    Instead of `_evaluate_prompt(...)`, we can do your own chain-of-thought or direct `_model_invoke`.
+        #     #    If you prefer multi-step reasoning, see the chain-of-thought snippet below.
+        #     #    For brevity, here's a single direct call.
+        #     #    NOTE: You might define `self.model` or a custom approach.
+        #     #    We'll show a direct "extractor" approach with no dummy examples.
+        #     chain = create_extractor(
+        #         self.model,  # or trainer.model
+        #         tools=[],
+        #         tool_choice="any",  # no tools, we just want the final LLM output
+        #     )
+        #     messages = [{"role": "user", "content": meta_prompt_text}]
+        #     response = await chain.ainvoke(messages)
+
+        #     # 4) We parse the raw textual output into instructions (line by line).
+        #     #    Suppose the final LLM output is in `response["responses"][-1].text`.
+        #     #    Or if you prefer:  next((r for r in response["responses"] if ...), None)
+        #     if not response["responses"]:
+        #         return []
+
+        #     llm_output = response["responses"][
+        #         -1
+        #     ].text  # or .content if your library uses that
+        #     lines = [l.strip() for l in llm_output.split("\n") if l.strip()]
+
+        #     # Remove duplicates; keep up to `max_instructions`
+        #     instructions_seen = {}
+        #     final_instructions = []
+        #     for line in lines:
+        #         # a simple dedup
+        #         if line not in instructions_seen:
+        #             instructions_seen[line] = True
+        #             final_instructions.append(line)
+        #             if len(final_instructions) >= max_instructions:
+        #                 break
+
+        #     return final_instructions
+
+    @ls.traceable
+    async def _build_data_summary(
+        self,
+        baseline_prompt: pm_types.PromptWrapper,
+        train_examples: List[pm_types.Example],
+    ) -> str:
         messages = [
             {
                 "role": "user",
@@ -346,56 +470,10 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
             msg = response["messages"][-1]
             messages.append(msg)
 
-            # Add tool responses
             ids = [tc["id"] for tc in (msg.tool_calls or [])]
             for id_ in ids:
                 messages.append({"role": "tool", "content": "", "tool_call_id": id_})
-
-        # Now use both the data summary and specific examples to propose instructions
-        instructions_prompt = pm_types.PromptWrapper.from_prior(
-            baseline_prompt,
-            (
-                "You are an expert at analyzing training data to propose improved instructions. "
-                "Below is a data summary and sample of training examples, along with a baseline prompt. "
-                "Propose up to 10 new instructions (one per line) that will improve accuracy.\n\n"
-                "<DATA_SUMMARY>\n"
-                f"{data_summary}\n"
-                "</DATA_SUMMARY>\n\n"
-                "<TRAIN_DATA_SNIPPET>\n"
-                f"{_sample_data_for_prompt(train_examples, max_len=5)}\n"
-                "</TRAIN_DATA_SNIPPET>\n\n"
-                "<BASELINE_PROMPT>\n"
-                f"{baseline_prompt.get_prompt_str()}\n"
-                "</BASELINE_PROMPT>\n\n"
-                "Focus on both general patterns from the data summary and specific requirements "
-                "from the examples. Each instruction should be clear and actionable.\n\n"
-                "Now propose instructions:\n"
-            ),
-            extra_info={"proposer": True},
-        )
-        propose_results = await trainer._evaluate_prompt(
-            instructions_prompt,
-            task,
-            train_examples,
-            debug=cfg.debug,
-            system_config=system_config,
-            upload_results=False,
-        )
-        if not propose_results:
-            return []
-
-        raw_output = propose_results[0]["run"].outputs
-
-        # Split on lines, removing empties
-        lines = [output for output in raw_output if output]
-        # Remove empty lines, duplicates, etc.
-        instructions = {}
-        for line in lines:
-            instructions[json.dumps(line, sort_keys=True)] = line
-            if len(instructions) >= cfg.num_instruction_candidates:
-                break
-
-        return list(instructions.values())
+        return data_summary
 
     @ls.traceable
     async def _optimize_prompt_parameters(
@@ -409,16 +487,14 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
         best_score: float,
         system_config: Optional[dict] = None,
     ) -> pm_types.PromptWrapper:
-        """Pick an instruction index and a few-shot index, merge them into a candidate prompt,
+        """ "Pick an instruction index and a few-shot index, merge them into a candidate prompt,
         and do partial or full dev eval, and record the score.
         """
-
         cfg: MiproAlgorithmConfig = self.config
         best_prompt: pm_types.PromptWrapper = baseline_prompt
 
         self._score_data = []
         self._score_data.append((best_score, baseline_prompt, True))
-
         self._best_score = best_score
 
         dev_subset = dev_examples
@@ -433,7 +509,6 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
             instr_idx = trial.suggest_int(
                 f"inst_idx_{i}",
                 0,
-                # Magic numbers are underappreciated; we should celebrate them.
                 len(instr_list) - 1,
                 n_candidates=24,
                 gamma=0.2,
@@ -462,8 +537,7 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
                 chosen_demo,
             )
 
-            # Evaluate on partial dev or full dev
-            # We do partial dev if minibatch is True
+            # Evaluate partial or full
             if cfg.minibatch:
                 score = await self._evaluate(
                     trainer, candidate_prompt, task, dev_subset, system_config
@@ -473,13 +547,14 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
                     trainer, candidate_prompt, task, dev_examples, system_config
                 )
 
-            # Record data
+            trial.register(f"inst_idx_{i}", float(instr_idx), float(score))
+            if example_candidates:
+                trial.register("demo_idx", float(demos_idx), float(score))
+
             self._score_data.append((score, candidate_prompt, not cfg.minibatch))
 
-            # If we are not in minibatch or we found a new best partial score,
-            # we might do a full eval occasionally
             if cfg.minibatch:
-                trial_num = len(trial.observations.get("inst_idx_0", [])) + 1
+                trial_num = len(trial.observations.get("inst_idx_0", []))
                 if (trial_num % cfg.minibatch_full_eval_steps == 0) or (
                     trial_num == cfg.num_trials
                 ):
@@ -496,7 +571,6 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
                                 system_config,
                             )
                         )
-                        # store
                         self._score_data.append(
                             (best_partial_score, best_partial[1], True)
                         )
@@ -504,10 +578,10 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
                             self._best_score = best_partial_score
                             best_prompt = best_partial[1]
 
-            # Update best overall if needed
-            if not cfg.minibatch and score > self._best_score:
-                self._best_score = score
-                best_prompt = candidate_prompt
+            else:
+                if score > self._best_score:
+                    self._best_score = score
+                    best_prompt = candidate_prompt
 
             return score
 
@@ -516,7 +590,6 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
 
         fully_evaled = [x for x in self._score_data if x[2]]
         if not fully_evaled:
-            # fallback => pick top partial
             candidate = max(self._score_data, key=lambda x: x[0])
             best_prompt = candidate[1]
             self._best_score = candidate[0]
@@ -541,7 +614,6 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
         dev_examples: List[pm_types.Example],
         system_config: Optional[dict] = None,
     ) -> float:
-        """Evaluate on entire dev set, return average metric."""
         results = await trainer._evaluate_prompt(
             prompt,
             task,
@@ -556,9 +628,6 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
 
 
 def _sample_data_for_prompt(examples: List[pm_types.Example], max_len: int = 5) -> str:
-    """Summarize a small subset of the training data, purely for instruction proposal usage.
-    Real MIPRO can do data summarization; here we provide a minimal approach.
-    """
     subset = examples[:max_len]
     lines = []
     for ex in subset:
@@ -571,9 +640,6 @@ def _merge_instruction_and_examples(
     instruction: str,
     synth_examples: Optional[List[pm_types.Example]],
 ) -> pm_types.PromptWrapper:
-    """
-    Merge new instruction + few-shot synth_examples into baseline prompt text.
-    """
     old_text = baseline_prompt.get_prompt_str_in_context()
     new_text = f"{old_text}\n\n# Additional Instruction:\n{instruction}"
 

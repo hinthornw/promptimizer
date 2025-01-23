@@ -634,6 +634,7 @@ class PromptTrainer:
                         prt.add_outputs(result)
                     else:
                         prt.add_outputs({"output": result})
+            return result
 
         with ls.tracing_context(parent={"langsmith-trace": ""}):
             results = await ls.aevaluate(

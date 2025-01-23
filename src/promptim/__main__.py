@@ -124,7 +124,10 @@ async def run(
 ):
     task, config, experiment_parent = load_task(task_name)
     if patch:
+        from promptim.types import PromptWrapper
+
         config = deep_merge(config, patch)
+        task.initial_prompt = PromptWrapper.from_config(config["initial_prompt"])
     experiment_dir = os.path.join(
         experiment_parent,
         f"exp-{datetime.now(timezone.utc).strftime('%Y-%m-%d-%H-%M-%S')}",

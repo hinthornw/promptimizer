@@ -41,6 +41,7 @@ class BaseOptimizer(BaseMutator):
         history: Sequence[Sequence[pm_types.PromptWrapper]],
         results: List[ExperimentResultRow],
         task: pm_types.Task,
+        **kwargs,
     ) -> list[pm_types.PromptWrapper]:
         """Given the current generation of prompts and the latest evaluation results,
         propose a new and improved prompt variant."""

@@ -2,7 +2,7 @@
 # https://optuna.readthedocs.io/en/stable/_modules/optuna/samplers/_tpe/sampler.html#TPESampler
 import math
 import random
-from typing import List, Dict, Tuple, Callable, Awaitable
+from typing import List, Dict, Tuple, Callable, Awaitable, Union, Any
 
 _MIN = -999999999.0
 
@@ -22,16 +22,72 @@ class TPESampler:
     def __init__(self, seed: int = 42):
         self.rng = random.Random(seed)
         # Data structure to store param -> list of (value, objective)
-        self.observations: Dict[str, List[Tuple[float, float]]] = {}
+        self.observations: Dict[str, List[Tuple[Union[float, int, str], float]]] = {}
         # You can store advanced settings here if desired (bandwidth, etc.)
 
-    def register(self, param_name: str, value: float, objective: float):
+    def register(
+        self, param_name: str, value: Union[float, int, str], objective: float
+    ):
         """
         Add one completed trial's param value and objective outcome.
         """
         if param_name not in self.observations:
             self.observations[param_name] = []
         self.observations[param_name].append((value, objective))
+
+    def suggest_categorical(
+        self,
+        param_name: str,
+        choices: List[Any],
+        n_candidates: int = 24,
+        gamma: float = 0.2,
+        lower_is_better: bool = True,
+    ) -> Any:
+        """Return a suggested categorical value for the given param."""
+        history = self.observations.get(param_name, [])
+        if len(history) < 2:
+            return self.rng.choice(choices)
+
+        sorted_history = sorted(
+            history, key=lambda x: x[1], reverse=(not lower_is_better)
+        )
+
+        n_good = max(1, int(math.ceil(len(sorted_history) * gamma)))
+        good = sorted_history[:n_good]
+        bad = sorted_history[n_good:]
+
+        good_counts = {choice: 0.0 for choice in choices}
+        bad_counts = {choice: 0.0 for choice in choices}
+
+        pseudocount = 1.0
+        for choice in choices:
+            good_counts[choice] = pseudocount
+            bad_counts[choice] = pseudocount
+
+        for val, _ in good:
+            good_counts[val] += 1.0
+        for val, _ in bad:
+            bad_counts[val] += 1.0
+
+        good_total = sum(good_counts.values())
+        bad_total = sum(bad_counts.values())
+
+        for choice in choices:
+            good_counts[choice] /= good_total
+            bad_counts[choice] /= bad_total
+
+        best_choice = None
+        best_ratio = _MIN
+
+        for _ in range(n_candidates):
+            candidate = self.rng.choice(choices)
+            ratio = math.log(good_counts[candidate]) - math.log(bad_counts[candidate])
+
+            if ratio > best_ratio:
+                best_ratio = ratio
+                best_choice = candidate
+
+        return best_choice if best_choice is not None else self.rng.choice(choices)
 
     def suggest(
         self,
@@ -55,28 +111,23 @@ class TPESampler:
         if len(history) < 2:
             return self.rng.uniform(low, high)
 
-        # 1) Sort by objective
-        #    If lower_is_better => sort ascending, else descending
         sorted_history = sorted(
             history, key=lambda x: x[1], reverse=(not lower_is_better)
         )
 
-        # 2) Split into 'good' vs 'bad'
         n_good = max(1, int(math.ceil(len(sorted_history) * gamma)))
-        good = sorted_history[:n_good]  # top fraction
-        bad = sorted_history[n_good:]  # rest
+        good = sorted_history[:n_good]
+        bad = sorted_history[n_good:]
 
-        # 3) We'll now sample from the 'good' mixture. We generate n_candidates points.
-        #    For each candidate x, we compute logpdf_good(x) and logpdf_bad(x),
-        #    pick the x maximizing [logpdf_good - logpdf_bad].
         best_x = None
-        best_obj = _MIN  # we want max
+        best_obj = _MIN
+
         for _ in range(n_candidates):
             x_cand = self._sample_from_mixture(good, low, high, bandwidth)
             log_l_good = self._log_mixture_pdf(x_cand, good, bandwidth)
             log_l_bad = self._log_mixture_pdf(x_cand, bad, bandwidth)
-            # ratio => log(l(x)/g(x)) = log l(x) - log g(x)
             ratio = log_l_good - log_l_bad
+
             if ratio > best_obj:
                 best_obj = ratio
                 best_x = x_cand
@@ -84,8 +135,7 @@ class TPESampler:
         if best_x is None:
             return self.rng.uniform(low, high)
 
-        best_x = max(low, min(high, best_x))
-        return best_x
+        return max(low, min(high, best_x))
 
     def suggest_int(
         self,
@@ -95,29 +145,34 @@ class TPESampler:
         n_candidates: int = 24,
         gamma: float = 0.2,
         lower_is_better: bool = True,
-        bandwidth: float = 0.1,
     ) -> int:
         """Return a suggested integer value for the given param within [low, high]."""
         float_val = self.suggest(
             param_name=param_name,
-            low=float(low) - 0.4999,  # ensure rounding works correctly
+            low=float(low) - 0.4999,
             high=float(high) + 0.4999,
             n_candidates=n_candidates,
             gamma=gamma,
             lower_is_better=lower_is_better,
-            bandwidth=bandwidth,
         )
         return int(round(float_val))
 
-    async def optimize(self, objective_fn: Callable[..., [Awaitable[float]]], n_trials: int = 30) -> float:
-        """Run optimization for n_trials, returning best objective value found.
-        The objective_fn should take this sampler as argument and return a float score.
-        """
+    async def optimize(
+        self, objective_fn: Callable[[Any], Awaitable[float]], n_trials: int = 30
+    ) -> "Trial":
+        """Run optimization for n_trials, returning best trial."""
         best_score = float("-inf")
+        best_trial = None
+
         for _ in range(n_trials):
-            score = await objective_fn(self)
-            best_score = max(best_score, score)
-        return best_score
+            trial = Trial(self)
+            score = await objective_fn(trial)
+
+            if score > best_score:
+                best_score = score
+                best_trial = trial
+
+        return best_trial
 
     def _sample_from_mixture(
         self,
@@ -133,15 +188,13 @@ class TPESampler:
         if not dataset:
             return self.rng.uniform(low, high)
 
-        # Randomly pick one data point in 'dataset', then sample from a Normal
-        # around that data point's param value with given bandwidth.
-        # This is the simplest approach (each data point has weight = 1/len).
         idx = self.rng.randint(0, len(dataset) - 1)
         center = dataset[idx][0]
-        x = self.rng.gauss(center, bandwidth)
-        # If you prefer a more robust bandwidth, you can do e.g. Silverman's rule
-        # or Freedman-Diaconis. For simplicity, we use fixed bandwidth.
-        return x
+
+        min_distance = min(center - low, high - center)
+        adj_bandwidth = min(bandwidth, min_distance / 3)
+
+        return self.rng.gauss(center, adj_bandwidth)
 
     def _log_mixture_pdf(
         self, x: float, dataset: List[Tuple[float, float]], bandwidth: float
@@ -150,22 +203,64 @@ class TPESampler:
         if not dataset:
             return _MIN
 
-        # log of average => log(1/N * sum(pdf_i(x))) => log sum(pdf_i(x)) - log N
-        # We'll do it carefully to avoid floating underflow by using log-sum-exp approach.
         log_vals = []
         for val, _ in dataset:
             log_vals.append(self._log_normal_pdf(x, val, bandwidth))
 
-        # log-sum-exp
-        mx = max(log_vals)
-        s = 0.0
-        for lv in log_vals:
-            s += math.exp(lv - mx)
-        return mx + math.log(s) - math.log(len(log_vals))
+        max_log = max(log_vals)
+        sum_exp = 0.0
+        for log_val in log_vals:
+            sum_exp += math.exp(log_val - max_log)
+
+        return max_log + math.log(sum_exp) - math.log(len(log_vals))
 
     def _log_normal_pdf(self, x: float, mu: float, sigma: float) -> float:
         if sigma <= 0.0:
             return _MIN
-        c = math.log(1.0 / (math.sqrt(2.0 * math.pi) * sigma))
+
         z = (x - mu) / sigma
-        return c - 0.5 * z * z
+        return -0.5 * z * z - math.log(sigma) - 0.5 * math.log(2 * math.pi)
+
+
+class Trial:
+    def __init__(self, sampler: TPESampler):
+        self.sampler = sampler
+        self.params = {}
+
+    def suggest_categorical(
+        self,
+        name: str,
+        choices: List[Any],
+        n_candidates: int = 24,
+        gamma: float = 0.2,
+        lower_is_better: bool = True,
+    ) -> Any:
+        value = self.sampler.suggest_categorical(
+            name,
+            choices,
+            n_candidates=n_candidates,
+            gamma=gamma,
+            lower_is_better=lower_is_better,
+        )
+        self.params[name] = value
+        return value
+
+    def suggest_int(
+        self,
+        name: str,
+        low: int,
+        high: int,
+        n_candidates: int = 24,
+        gamma: float = 0.2,
+        lower_is_better: bool = True,
+    ) -> int:
+        value = self.sampler.suggest_int(
+            name,
+            low,
+            high,
+            n_candidates=n_candidates,
+            gamma=gamma,
+            lower_is_better=lower_is_better,
+        )
+        self.params[name] = value
+        return value

@@ -1,6 +1,6 @@
 {
   "name": "email_cs_10",
-  "dataset": "email_cs_10",
+  "dataset": "https://smith.langchain.com/public/45cf669b-4e11-4315-a311-5a59f855df8b/d",
   "description": "Triage emails",
   "evaluators": "./evaluators.py:accuracy_evaluator",
   "evaluator_descriptions": {

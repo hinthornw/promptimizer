@@ -1,6 +1,6 @@
 {
   "name": "math_word_problems",
-  "dataset": "math_word_problems_5",
+  "dataset": "https://smith.langchain.com/public/dd06b406-c37e-429e-8274-db4e9bc832ef/d",
   "description": "Solve math word problems",
   "evaluators": "./evaluators.py:correctness_evaluator",
   "evaluator_descriptions": {

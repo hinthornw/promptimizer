@@ -1,6 +1,6 @@
 {
   "name": "email_elon",
-  "dataset": "email_elon",
+  "dataset": "https://smith.langchain.com/public/0cc60f5b-5c37-4020-8d54-88e403a18a9c/d",
   "description": "Triage emails",
   "evaluators": "email_elon.evaluators:accuracy_evaluator",
   "evaluator_descriptions": {
@@ -12,7 +12,7 @@
     }
   },
   "initial_prompt": {
-    "identifier": "elon_email:c8a3061d",
+    "identifier": "elon_email:38f8f365",
     "upload_to": "elon_email"
   },
   "$schema": "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"

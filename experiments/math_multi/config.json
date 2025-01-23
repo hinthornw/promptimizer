@@ -1,0 +1,19 @@
+{
+  "name": "math_word_problems",
+  "dataset": "math_word_problems_5",
+  "description": "Solve math word problems",
+  "evaluators": "./evaluators.py:correctness_evaluator",
+  "evaluator_descriptions": {
+    "correctness": "Evaluates if the predicted answer equals the reference answer"
+  },
+  "optimizer": {
+    "model": {
+      "model": "claude-3-5-sonnet-20241022"
+    }
+  },
+  "initial_prompt": {
+    "identifier": "math_word_problems:7f489060",
+    "upload_to": "math_word_problems"
+  },
+  "$schema": "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+}

@@ -1,0 +1,19 @@
+{
+  "name": "email_cs_10",
+  "dataset": "email_cs_10",
+  "description": "Triage emails",
+  "evaluators": "./evaluators.py:accuracy_evaluator",
+  "evaluator_descriptions": {
+    "accuracy": "Evaluates if the predicted category matches the reference class"
+  },
+  "optimizer": {
+    "model": {
+      "model": "claude-3-5-sonnet-20241022"
+    }
+  },
+  "initial_prompt": {
+    "identifier": "cs_email10:f1ba6c30",
+    "upload_to": "cs_email10"
+  },
+  "$schema": "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
+}

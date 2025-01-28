@@ -12,7 +12,7 @@
     }
   },
   "initial_prompt": {
-    "identifier": "elon_email:38f8f365",
+    "identifier": "langchain-ai/elon_email:38f8f365",
     "upload_to": "elon_email"
   },
   "$schema": "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"

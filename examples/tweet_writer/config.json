@@ -2,9 +2,6 @@
   "name": "Tweet Generator",
   "dataset": "tweet-optim",
   "evaluators": "./task.py:evaluators",
-  "algorithm": {
-    "kind": "phaseevo"
-  },
   "optimizer": {
     "model": {
       "model": "openai:gpt-4o"

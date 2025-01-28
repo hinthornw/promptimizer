@@ -12,7 +12,7 @@
     }
   },
   "initial_prompt": {
-    "identifier": "email_cs_simple:e4ebc623",
+    "identifier": "langchain-ai/email_cs_simple:933387ea",
     "upload_to": "email_cs_simple"
   },
   "$schema": "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"

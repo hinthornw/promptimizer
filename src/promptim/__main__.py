@@ -107,6 +107,14 @@ def load_task(name_or_path: str):
     if dataset_url:
         ls_client = ls.Client()
         ds = ls_client.clone_public_dataset(dataset_url, dataset_name=dataset_name)
+        examples = list(ls_client.list_shared_examples(dataset_url.split("/")[-2]))
+        copied_examples = list(ls_client.list_examples(dataset_id=ds.id))
+        splits = [(e.metadata or {}).get("dataset_split", ["train"]) for e in examples]
+        ls_client.update_examples(
+            example_ids=[e.id for e in copied_examples],
+            splits=splits,
+            dataset_ids=[ds.id] * len(examples),
+        )
         config["dataset"] = ds.name
         task.dataset = ds.name
     return task, config, experiment_parent

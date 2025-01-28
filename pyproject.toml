@@ -10,13 +10,13 @@ requires-python = ">=3.11"
 dependencies = [
     "click",
     "langchain",
-    "langchain-anthropic>=0.2.3",
+    "langchain-anthropic>=0.3",
     "langsmith>=0.2.11",
-    "langchain-openai",
+    "langchain-openai>=0.3",
     "pandas>=0.2.4",
     "rich",
     "python-dotenv>=1.0.1",
-    "trustcall>=0.0.26",
+    "trustcall>=0.0.28",
 ]
 
 [project.scripts]

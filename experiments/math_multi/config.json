@@ -12,7 +12,7 @@
     }
   },
   "initial_prompt": {
-    "identifier": "math_word_problems:7f489060",
+    "identifier": "langchain-ai/math_word_problems:47c8c36d",
     "upload_to": "math_word_problems"
   },
   "$schema": "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"

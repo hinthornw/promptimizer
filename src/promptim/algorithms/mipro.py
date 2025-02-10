@@ -66,7 +66,7 @@ class MIPROAlgorithm(BaseAlgorithm[MiproAlgorithmConfig]):
         baseline_scores: Optional[dict] = None,
         baseline_experiment_results: Optional[list] = None,
     ) -> tuple[pm_types.PromptWrapper, float]:
-        print(f"\n=== MIPRO: Starting Optimization ===")
+        print("\n=== MIPRO: Starting Optimization ===")
         try:
             print(ls.get_current_run_tree().get_url())
         except Exception:

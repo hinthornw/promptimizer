@@ -2,9 +2,9 @@
 set -e  # Exit on error
 
 VENV_PATH=".venv/bin/activate"
-DEFAULT_SWEEP="experiments/baseline_sweeps.jsonl"
+DEFAULT_SWEEP="experiments/tool_sweeps.jsonl"
 SWEEP_FILE=""
-EPOCHS=0
+EPOCHS=10
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -34,6 +34,7 @@ fi
 # cs10 -> o1, o1-mini, claude, 4o
 # tooluse -> o1, o1-mini, claude
 # email_cs_simple -> o1, o1-mini, claude, 4o
+
 
 directories=(
     "experiments/email_elon"

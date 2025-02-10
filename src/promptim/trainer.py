@@ -945,7 +945,7 @@ def _create_experiment(
                 reference_dataset_id=dataset_id,
                 metadata={"__creation_source": "promptim", **(metadata or {})},
             )
-        except ls_utils.LangSmithConflictError as e:
+        except ls_utils.LangSmithConflictError:
             # If there's a conflict, increment the index and try again
             next_idx += 1
             new_name = f"{experiment_name} [{next_idx}-{uuid.uuid4().hex[:4]}]"

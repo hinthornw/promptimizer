@@ -22,7 +22,11 @@ class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
         self,
         trainer: PromptTrainer,
         task: pm_types.Task,
-        initial_population: Union[pm_types.PromptWrapper, List[pm_types.PromptWrapper]],
+        initial_population: Union[
+            pm_types.PromptWrapper,
+            List[pm_types.PromptWrapper],
+            dict[str, pm_types.PromptWrapper],
+        ],
         train_examples: list[pm_types.Example],
         dev_examples: list[pm_types.Example],
         *,
@@ -35,10 +39,17 @@ class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
     ) -> tuple[pm_types.PromptWrapper, float]:
         """Implementation of the original optimize_prompt flow."""
         if isinstance(initial_population, pm_types.PromptWrapper):
-            initial_population = [initial_population]
+            initial_population = {"default": initial_population}
+        elif isinstance(initial_population, list):
+            initial_population = {"default": initial_population[0]}
+        elif isinstance(initial_population, dict):
+            initial_population = {
+                k: v[0] if isinstance(v, list) else v
+                for k, v in initial_population.items()
+            }
         history = [initial_population]
         best_score = float("-inf")
-        best_prompt = initial_population[0]
+        best_prompts = initial_population
         with Progress() as progress:
             main_task = progress.add_task(
                 "[cyan]Optimizing prompt...", total=self.config.epochs + 2
@@ -124,7 +135,7 @@ class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
                             results = None
                     if results is None:
                         results = await trainer._evaluate_prompt(
-                            history[-1][-1],
+                            history[-1],
                             task,
                             batch,
                             debug=self.config.debug,
@@ -176,7 +187,7 @@ class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
                 # Evaluate on dev set
                 progress.update(main_task, description="[cyan]Evaluating on dev set...")
                 dev_results = await trainer._evaluate_prompt(
-                    history[-1][-1],
+                    history[-1],
                     task,
                     dev_examples,
                     debug=self.config.debug,
@@ -193,7 +204,7 @@ class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
 
                 if dev_score is not None and dev_score > best_score:
                     best_score = dev_score
-                    best_prompt = history[-1][-1]
+                    best_prompts = history[-1][-1]
                     progress.console.print(
                         f"New best score: {best_score:.4f} (surpassed previous best)"
                     )
@@ -211,7 +222,7 @@ class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
                     x=epoch,
                     x_label="epoch",
                     split="dev",
-                    prompt=best_prompt,
+                    prompt=best_prompts,
                 )
 
                 tokens_used = pm_utils.get_token_usage()
@@ -222,8 +233,8 @@ class MinibatchAlgorithm(BaseAlgorithm[AlgorithmConfig]):
                         x=tokens_used,
                         x_label="total tokens",
                         split="dev",
-                        prompt=best_prompt,
+                        prompt=best_prompts,
                     )
-                history.append([best_prompt])
+                history.append([best_prompts])
 
-            return best_prompt, best_score
+            return best_prompts, best_score

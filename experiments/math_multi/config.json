@@ -11,9 +11,14 @@
       "model": "claude-3-5-sonnet-20241022"
     }
   },
-  "initial_prompt": {
-    "identifier": "langchain-ai/math_word_problems:47c8c36d",
-    "upload_to": "math_word_problems"
+  "initial_prompts": {
+    "classifier": {
+      "prompt_str": "Respond in one word with the language you should use in responding to the following question:\n\n{problem}."
+    },
+    "math_solver": {
+      "prompt_str": "Respond to the following problem in {language}:\n\n{problem}."
+    }
   },
+  "system": "./multipart_system.py:solve_problem",
   "$schema": "https://raw.githubusercontent.com/hinthornw/promptimizer/refs/heads/main/config-schema.json"
 }

@@ -157,26 +157,42 @@ class PromptTrainer:
         The trainer still handles data loading, concurrency, experiment creation, etc.
         """
         if initial_population is None:
-            initial_population = task.initial_prompt
+            initial_population = (
+                {"default": [task.initial_prompt]}
+                if task.initial_prompt
+                else {k: [v] for k, v in task.initial_prompts.items()}
+            )
         if isinstance(initial_population, pm_types.PromptWrapper):
-            initial_population = [initial_population]
-        elif isinstance(initial_population, (str, dict, pm_types.PromptConfig)):
-            initial_population = pm_types.PromptWrapper.from_config(initial_population)
+            initial_population = {"default": initial_population}
+        elif isinstance(initial_population, dict):
+            initial_population = {
+                k: [
+                    pm_types.PromptWrapper.from_config(
+                        v[0] if isinstance(v, list) else v
+                    )
+                ]
+                for k, v in initial_population.items()
+            }
+        elif isinstance(initial_population, (str, pm_types.PromptConfig)):
+            initial_population = {
+                "default": pm_types.PromptWrapper.from_config(initial_population)
+            }
 
         # Initialize the prompt(s)
-        for prompt in initial_population:
-            if prompt.prompt_str and commit_prompts:
-                richprint(
-                    "[yellow]Warning: No prompt identifier is configured for this run. "
-                    "Prompts will not be committed.[/yellow]"
-                )
-                commit_prompts = False
-            if task.system is None:
-                task.system = task.get_prompt_system(prompt)
-            prompt.load(self.client)
+        for _, prompts in initial_population.items():
+            for prompt in prompts:
+                if prompt.prompt_str and commit_prompts:
+                    richprint(
+                        "[yellow]Warning: No prompt identifier is configured for this run. "
+                        "Prompts will not be committed.[/yellow]"
+                    )
+                    commit_prompts = False
+                if task.system is None:
+                    task.system = task.get_prompt_system(prompt)
+                prompt.load(self.client)
 
         train_examples, dev_examples, test_examples = await self._get_data(
-            initial_population[0], task
+            next(iter(initial_population.values()))[0], task
         )
         experiment_name = experiment_name or f"Prompt Optimization - {task.name}"
 
@@ -187,7 +203,7 @@ class PromptTrainer:
             task,
             train_examples,
             dev_examples,
-            initial_population[-1],
+            initial_population,
             experiment_name=experiment_name,
             debug=self.algorithm.config.debug,
             system_config=system_config,
@@ -209,14 +225,14 @@ class PromptTrainer:
         _, final_test_scores = await self._get_test_scores(
             task,
             test_examples,
-            initial_population[0],
+            initial_population,
             best_prompt,
             experiment_name,
             self.algorithm.config.debug,
             system_config,
         )
         pm_utils.print_rich_diff(
-            initial_population[0].get_prompt_str_in_context(),
+            next(iter(initial_population.values()))[0].get_prompt_str_in_context(),
             best_prompt.get_prompt_str_in_context(),
             title="Final Prompt Updates",
         )
@@ -357,7 +373,7 @@ class PromptTrainer:
         task: pm_types.Task,
         train_examples: list[Example],
         dev_examples: list[Example],
-        current_prompt: pm_types.PromptWrapper,
+        current_prompts: dict[str, list[pm_types.PromptWrapper]],
         experiment_name: str,
         debug: bool,
         system_config: Optional[dict] = None,
@@ -374,7 +390,7 @@ class PromptTrainer:
                 experiment_name=experiment_name + f"- baseline {uuid.uuid4().hex[:6]}",
             )
             baseline_experiment_results = await self._evaluate_prompt(
-                current_prompt,
+                current_prompts,
                 task,
                 dev_examples,
                 debug=debug,
@@ -601,7 +617,7 @@ class PromptTrainer:
     @ls.traceable(process_outputs=lambda _: {})
     async def _evaluate_prompt(
         self,
-        prompt_config: pm_types.PromptWrapper,
+        prompt_config: dict[str, pm_types.PromptWrapper | list[pm_types.PromptWrapper]],
         task: pm_types.Task,
         data: str | list,
         debug: bool = False,
@@ -611,9 +627,13 @@ class PromptTrainer:
         upload_results: bool = True,
     ) -> list[ExperimentResultRow]:
         """Evaluates a prompt against a task's dataset and evaluators."""
-        prompt = prompt_config.load(self.client)
+        prompts = {
+            k: (v[0] if isinstance(v, list) else v).load(self.client)
+            for k, v in prompt_config.items()
+        }
         metadata = {
-            "prompt": prompt_config.identifier if prompt_config.identifier else "local"
+            f"{k}_prompt": ((v[0] if isinstance(v, list) else v).identifier if (v[0] if isinstance(v, list) else v).identifier else "local")
+            for k, v in prompt_config.items()
         }
         rt = ls.get_current_run_tree()
 
@@ -626,9 +646,9 @@ class PromptTrainer:
                 )
             async with stack:
                 if system_config:
-                    result = await task.system_safe(prompt, inputs, **system_config)
+                    result = await task.system_safe(prompts, inputs, **system_config)
                 else:
-                    result = await task.system_safe(prompt, inputs)
+                    result = await task.system_safe(prompts, inputs)
                 if prt is not None:
                     if isinstance(result, dict):
                         prt.add_outputs(result)

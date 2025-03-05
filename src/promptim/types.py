@@ -27,7 +27,7 @@ DEFAULT_OPTIMIZER_MODEL_CONFIG = {
 }
 
 
-SystemType = Callable[[ChatPromptTemplate, dict], dict]
+SystemType = Callable[[dict[str, ChatPromptTemplate], dict], dict]
 """Takes the current prompt and the example inputs and returns the results."""
 
 
@@ -298,6 +298,8 @@ class TaskLike:
     """The name of the dataset in LangSmith to be used for training and evaluation."""
     initial_prompt: PromptConfig
     """The starting prompt configuration, which will be optimized during the process."""
+    initial_prompts: dict[str, PromptConfig] = field(default_factory=dict)
+    """A mapping of prompt IDs to their configurations, used for initializing multiple prompts."""
     description: str = ""
     """A detailed explanation of the task's objectives and constraints."""
     evaluator_descriptions: dict = field(default_factory=dict)
@@ -318,10 +320,23 @@ class Task(TaskLike):
     @classmethod
     def from_dict(cls, d: dict):
         d_ = d.copy()
-        kwargs = {"initial_prompt": PromptWrapper(**d_.pop("initial_prompt")), **d_}
-
-        field_names = {f.name for f in fields(cls)}
-        kwargs = {k: v for k, v in kwargs.items() if k in field_names}
+        if "initial_prompt" in d_:
+            d_["initial_prompt"] = PromptWrapper(**d_.pop("initial_prompt"))
+        elif "initial_prompts" in d_:
+            d_["initial_prompts"] = {
+                k: PromptWrapper(**v) for k, v in d_["initial_prompts"].items()
+            }
+            d_["initial_prompt"] = None
+        else:
+            raise KeyError(
+                "Either 'initial_prompt' or 'initial_prompts' must be provided"
+            )
+        kwargs = {k: v for k, v in d_.items() if k in {f.name for f in fields(cls)}}
+        if kwargs.get("initial_prompts") and not kwargs.get("system"):
+            raise ValueError(
+                "When 'initial_prompts' is provided,"
+                " 'system' must also be provided. No default exists for a multi-prompt system."
+            )
         return cls(**kwargs)
 
     def describe(self):
@@ -333,7 +348,8 @@ class Task(TaskLike):
 
     @staticmethod
     def get_prompt_system(prompt_wrapper: PromptWrapper):
-        async def prompt_system(prompt: ChatPromptTemplate, inputs: dict):
+        async def prompt_system(prompts: dict[str, ChatPromptTemplate], inputs: dict):
+            prompt = next(iter(prompts.values()))
             formatted = prompt.invoke(inputs)
             return await prompt_wrapper._postlude.ainvoke(formatted)
 

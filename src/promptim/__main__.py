@@ -49,39 +49,56 @@ def _load_task(name_or_path: str):
             config = json.load(f)
         if "$schema" in config:
             del config["$schema"]
-        evaluators_path = config["evaluators"]
 
-        module_path, evaluators_variable = [
-            part for part in evaluators_path.split(":") if part
-        ]
-        if ".py" not in module_path:
-            # Assume it's like "my.module.path:fooo"
-            # and convert it to "my/module/path/foo.py"
-            module_path = module_path.replace(".", "/")
-            module_path += ".py"
-        # First try to load it relative to the config path
-        config_dir = os.path.dirname(name_or_path)
-        relative_module_path = os.path.join(config_dir, module_path)
-        if os.path.exists(relative_module_path):
-            module_path = relative_module_path
-        else:
-            relative_module_path = os.path.join(
-                os.path.dirname(config_dir), module_path
-            )
+        # Helper function to load a module and get a variable from it
+        def load_module_variable(path_string, config_dir, variable_type_name):
+            module_path, variable_name = [
+                part for part in path_string.split(":") if part
+            ]
+            if ".py" not in module_path:
+                # Assume it's like "my.module.path:fooo"
+                # and convert it to "my/module/path/foo.py"
+                module_path = module_path.replace(".", "/")
+                module_path += ".py"
+            # First try to load it relative to the config path
+            relative_module_path = os.path.join(config_dir, module_path)
             if os.path.exists(relative_module_path):
                 module_path = relative_module_path
-        if not os.path.exists(module_path):
-            raise ValueError(f"Could not find evaluator module {module_path}")
-        spec = importlib.util.spec_from_file_location("evaluators_module", module_path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-        evaluators = getattr(module, evaluators_variable)
+            else:
+                relative_module_path = os.path.join(
+                    os.path.dirname(config_dir), module_path
+                )
+                if os.path.exists(relative_module_path):
+                    module_path = relative_module_path
+            if not os.path.exists(module_path):
+                raise ValueError(
+                    f"Could not find {variable_type_name} module {module_path}"
+                )
+            spec = importlib.util.spec_from_file_location(
+                f"{variable_type_name}_module", module_path
+            )
+            module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(module)
+            return module_path, getattr(module, variable_name)
+
+        # Load evaluators
+        config_dir = os.path.dirname(name_or_path)
+        evaluators_path = config["evaluators"]
+        _, evaluators = load_module_variable(evaluators_path, config_dir, "evaluators")
         if inspect.isfunction(evaluators):
             evaluators = [evaluators]
         if not isinstance(evaluators, list):
             raise ValueError(
                 f"Expected evaluators to be a list, but got {type(evaluators).__name__}"
             )
+
+        # Load system function if specified
+        if "system" in config and isinstance(config["system"], str):
+            _, system_function = load_module_variable(
+                config["system"], config_dir, "system"
+            )
+            config["system"] = system_function
+
         task = Task.from_dict({**config, "evaluators": evaluators})
         return task, config, os.path.join(os.path.dirname(name_or_path), "~")
     except Exception as e:
@@ -111,17 +128,20 @@ def load_task(name_or_path: str):
         dataset_name = ds.name
         config["dataset"] = dataset_name
         task.dataset = dataset_name
-    #     ds = ls_client.clone_public_dataset(dataset_url, dataset_name=dataset_name)
-    #     examples = list(ls_client.list_shared_examples(dataset_url.split("/")[-2]))
-    #     copied_examples = list(ls_client.list_examples(dataset_id=ds.id))
-    #     splits = [(e.metadata or {}).get("dataset_split", ["train"]) for e in examples]
-    #     ls_client.update_examples(
-    #         example_ids=[e.id for e in copied_examples],
-    #         splits=splits,
-    #         dataset_ids=[ds.id] * len(examples),
-    #     )
-    #     config["dataset"] = ds.name
-    #     task.dataset = ds.name
+        if not ls_client.has_dataset(dataset_name=dataset_name):
+            ds = ls_client.clone_public_dataset(dataset_url, dataset_name=dataset_name)
+            examples = list(ls_client.list_shared_examples(dataset_url.split("/")[-2]))
+            copied_examples = list(ls_client.list_examples(dataset_id=ds.id))
+            splits = [
+                (e.metadata or {}).get("dataset_split", ["train"]) for e in examples
+            ]
+            ls_client.update_examples(
+                example_ids=[e.id for e in copied_examples],
+                splits=splits,
+                dataset_ids=[ds.id] * len(examples),
+            )
+            config["dataset"] = ds.name
+            task.dataset = ds.name
     return task, config, experiment_parent
 
 
@@ -159,7 +179,9 @@ async def run(
     with open(os.path.join(experiment_dir, "config.json"), "w", encoding="utf-8") as f:
         config_print = json.dumps(
             {
-                **config,
+                **{
+                    k: v for k, v in config.items() if k not in {"evaluators", "system"}
+                },
                 "algorithm": algo_config,
             },
             indent=2,

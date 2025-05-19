@@ -17,7 +17,7 @@
     "model": {
       "model_provider": "azure_openai",
       "model": "gpt4o",
-      "api_key": "D7TbJwKTvfZ33RwZzha4wSVPXWw1HZiO2S2nFsIrEaSUFeDiWgDhJQQJ99BCACHYHv6XJ3w3AAABACOGe22z",
+      "api_key": "",
       "deployment_name": "gpt-4o",
       "azure_endpoint": "https://local-dev-eluvium.openai.azure.com",
       "api_version": "2024-06-01"

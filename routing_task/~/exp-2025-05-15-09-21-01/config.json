@@ -1,0 +1,34 @@
+{
+  "name": "initial-po-routing-classification",
+  "description": "Classify a PO-related email as portal-only mail or base PO mail.",
+  "dataset": "routing_dataset_2",
+  "objective": {
+    "key": "overall_accuracy",
+    "mode": "maximize"
+  },
+  "evaluators": "./task.py:evaluators",
+  "evaluator_descriptions": {
+    "portal_accuracy": "1.0 if model correctly predicts is_portal_mail, else 0.0.",
+    "base_accuracy": "1.0 if model correctly predicts is_base_po_mail, else 0.0.",
+    "overall_accuracy": "1.0 only if both boolean flags are correct, else 0.0."
+  },
+  "optimizer": {
+    "model": {
+      "model_provider": "azure_openai",
+      "model": "gpt4o",
+      "api_key": "D7TbJwKTvfZ33RwZzha4wSVPXWw1HZiO2S2nFsIrEaSUFeDiWgDhJQQJ99BCACHYHv6XJ3w3AAABACOGe22z",
+      "deployment_name": "gpt-4o",
+      "azure_endpoint": "https://local-dev-eluvium.openai.azure.com",
+      "api_version": "2024-06-01"
+    }
+  },
+  "initial_prompt": {
+    "identifier": "initial_po_routing_classification_prompt:a83e8680"
+  },
+  "algorithm": {
+    "batch_size": 40,
+    "train_size": 40,
+    "epochs": 10,
+    "debug": false
+  }
+}

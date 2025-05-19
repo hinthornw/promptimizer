@@ -1,12 +1,21 @@
 from __future__ import annotations
 
+import sys
+import os
+
+# Adjust sys.path to allow absolute imports from the 'src' directory
+# __file__ is src/promptim/__main__.py
+# os.path.dirname(__file__) is src/promptim
+# os.path.dirname(os.path.dirname(__file__)) is src
+_directly_parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _directly_parent_dir not in sys.path:
+    sys.path.insert(0, _directly_parent_dir)
+
 import asyncio
 import copy
 import functools
 import importlib.util
 import json
-import os
-import sys
 import time
 from typing import TYPE_CHECKING, Optional, Literal
 from datetime import datetime, timezone
@@ -995,4 +1004,53 @@ def deep_merge(base: dict, override: dict) -> dict:
 
 
 if __name__ == "__main__":
-    cli()
+    # --- Configuration for direct run ---
+    HARDCODED_TASK_PATH = "./routing_task/config.json" # Your task config file
+    # Default values from the 'train' command's click.option decorators
+    DEFAULT_BATCH_SIZE = 40
+    DEFAULT_TRAIN_SIZE = 40 # Note: in __main__ train() func, this is also 40.
+    DEFAULT_EPOCHS = 5
+    DEFAULT_DEBUG_MODE = False
+    DEFAULT_ANNOTATION_QUEUE = None
+    DEFAULT_NO_COMMIT = False # Corresponds to commit=True
+
+    load_environment() # Load .env file if present, same as original cli()
+
+    # Simplified version of what the 'train' click command does.
+    # We are not handling sweeps here for simplicity in direct execution.
+    # We directly call the core 'run' async function.
+    
+    print(f"INFO: Directly running train for task: {HARDCODED_TASK_PATH}")
+    
+    async def direct_train_run():
+        # The 'run' function is defined earlier in this file.
+        experiment_dir, config, prompt, score = await run(
+            task_name=HARDCODED_TASK_PATH,
+            batch_size=DEFAULT_BATCH_SIZE,
+            train_size=DEFAULT_TRAIN_SIZE, # Max training examples per epoch
+            epochs=DEFAULT_EPOCHS,
+            annotation_queue=DEFAULT_ANNOTATION_QUEUE,
+            debug=DEFAULT_DEBUG_MODE,
+            commit=not DEFAULT_NO_COMMIT, # commit is True if no_commit is False
+            patch=None, # No sweep patch for direct run
+        )
+        # Output results similar to the original train command
+        print("\\n--- Direct Run Training Complete ---")
+        print(f"Experiment Directory: {experiment_dir}")
+        print(f"Final Score: {score:.4f}")
+        print(f"Optimized Prompt:\\n{prompt.get_prompt_str()}")
+        print("--- End of Direct Run ---")
+
+    try:
+        asyncio.run(direct_train_run())
+    except FileNotFoundError as e:
+        print(f"ERROR: Could not find the task configuration file: {HARDCODED_TASK_PATH}")
+        print(f"Details: {e}")
+        print("Please ensure the path is correct and the file exists relative to your execution directory.")
+    except Exception as e:
+        import traceback
+        print(f"An unexpected error occurred during the direct train run: {e}")
+        traceback.print_exc()
+    # To keep the original CLI accessible if needed, you could comment out the above
+    # and uncomment the line below, or add a conditional check (e.g., environment variable).
+    # cli()

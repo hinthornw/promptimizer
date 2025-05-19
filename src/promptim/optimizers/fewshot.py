@@ -133,8 +133,13 @@ class FewShotOptimizer(optimizers.BaseOptimizer):
                             best_score = score
                             best_prompt = candidate
                             # For logging
-                            rt = ls.get_current_run_tree()
-                            rt.metadata["best_score"] = score
+                            if run_tree and hasattr(run_tree, 'metadata') and run_tree.metadata is not None:
+                                try:
+                                    run_tree.metadata["best_score"] = score
+                                except Exception as log_e:
+                                    print(f"LangSmith logging warning (metadata): {log_e}")
+                            # else: # Optional: for debugging if run_tree is often problematic
+                            #    print("LangSmith logging warning: run_tree or run_tree.metadata not available for best_score.")
                     else:
                         if best_score > float("-inf"):
                             score = best_score
@@ -159,13 +164,20 @@ class FewShotOptimizer(optimizers.BaseOptimizer):
                 best_trial = await self.sampler.optimize(
                     objective, n_trials=self.n_trials
                 )
-                run_tree.add_outputs(
-                    {
-                        "best_score": best_score,
+                # Check if run_tree is available and has add_outputs method
+                if run_tree and hasattr(run_tree, 'add_outputs'):
+                    output_data = {
+                        "best_score": best_score, # Use the nonlocal best_score updated by objective
                         "n_trials": self.n_trials,
                         "best_params": best_trial.params if best_trial else {},
                     }
-                )
+                    try:
+                        run_tree.add_outputs(output_data)
+                    except Exception as log_e:
+                        print(f"LangSmith logging warning (add_outputs): {log_e}")
+                # else: # Optional: for debugging
+                #    print("LangSmith logging warning: run_tree not available for add_outputs.")
+
             except Exception as e:
                 print(f"TPE optimization failed: {e}")
                 # If it fails, just fall back to last prompt
